@@ -234,6 +234,7 @@ export default function FinancasDashboard() {
     const [modalDivida,setModalDivida]=useState(false);
     const [modalInvest,setModalInvest]=useState(false);
     const [editingDV,setEditingDV]=useState<DespesaVariavel|null>(null);
+    const [copyDV,setCopyDV]=useState<DespesaFormData|null>(null);
     const [editingGanho,setEditingGanho]=useState<Ganho|null>(null);
     const [editingFixa,setEditingFixa]=useState<DespesaFixa|null>(null);
     const [editingDivida,setEditingDivida]=useState<Divida|null>(null);
@@ -251,7 +252,7 @@ export default function FinancasDashboard() {
     const [deleteConfirm, setDeleteConfirm] = useState<{ action: () => void } | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    const closeAll=()=>{setModal(false);setModalGanho(false);setModalFixa(false);setModalDivida(false);setModalInvest(false);setModalMeta(false);setModalFonte(false);setModalCategoria(false);setModalForma(false);setEditingDV(null);setEditingGanho(null);setEditingFixa(null);setEditingDivida(null);setEditingInvest(null);setEditingMeta(null);setEditingFonte(null);setEditingCategoria(null);setEditingForma(null);};
+    const closeAll=()=>{setModal(false);setModalGanho(false);setModalFixa(false);setModalDivida(false);setModalInvest(false);setModalMeta(false);setModalFonte(false);setModalCategoria(false);setModalForma(false);setEditingDV(null);setCopyDV(null);setEditingGanho(null);setEditingFixa(null);setEditingDivida(null);setEditingInvest(null);setEditingMeta(null);setEditingFonte(null);setEditingCategoria(null);setEditingForma(null);};
 
     const rOpts = { preserveScroll: true, preserveState: true, onSuccess: closeAll, onFinish: () => setLoading(false) };
 
@@ -336,7 +337,13 @@ export default function FinancasDashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const openEditFixa=(row: Record<string,any>)=>{const r=row as DespesaFixa;setEditingFixa(r);setModalFixa(true);};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const openEditDV=(row: Record<string,any>)=>{const r=row as DespesaVariavel;setEditingDV(r);setModal(true);};
+    const openEditDV=(row: Record<string,any>)=>{const r=row as DespesaVariavel;setCopyDV(null);setEditingDV(r);setModal(true);};
+    // Fecha o modal de edição e reabre como "nova despesa" pré-preenchida com os dados da despesa atual
+    const copyEditDV=()=>{
+        if(!editingDV) return;
+        setCopyDV({descricao:editingDV.descricao,categoria:editingDV.categoria,valor:String(editingDV.valor),data:editingDV.data,forma:editingDV.forma,balanco:editingDV.balanco,parcelas:"1",dataLimite:""});
+        setEditingDV(null);
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const openEditDivida=(row: Record<string,any>)=>{const r=row as Divida;setEditingDivida(r);setModalDivida(true);};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -447,7 +454,7 @@ export default function FinancasDashboard() {
                 </section>
 
                 {/* DESPESAS VARIÁVEIS */}
-                <section><SH title="Despesas Variáveis" onAdd={()=>{setEditingDV(null);setModal(true);}} filters={vFD} activeFilters={vFilters} onFilterChange={(k,v)=>setVFilters(p=>({...p,[k]:v}))}/><MT a={vM} o={setVM}/>
+                <section><SH title="Despesas Variáveis" onAdd={()=>{setEditingDV(null);setCopyDV(null);setModal(true);}} filters={vFD} activeFilters={vFilters} onFilterChange={(k,v)=>setVFilters(p=>({...p,[k]:v}))}/><MT a={vM} o={setVM}/>
                     <div className="mt-3"><Tbl cols={[
                         {key:"descricao",label:"Descrição",render:r=><span className="font-medium text-zinc-900">{r.descricao}</span>},
                         {key:"categoria",label:"Categoria",render:r=><B>{r.categoria}</B>},
@@ -548,10 +555,12 @@ export default function FinancasDashboard() {
                 </section>
             </div>
 
-            <DespesaVariavelModal open={modal} onClose={closeAll} onSubmit={submitDV} loading={loading}
+            <DespesaVariavelModal key={editingDV?`edit-${editingDV.id}`:copyDV?"copy":"new"} open={modal} onClose={closeAll} onSubmit={submitDV} loading={loading}
                 categorias={configCategorias} formas={configFormas}
-                initialData={editingDV?{descricao:editingDV.descricao,categoria:editingDV.categoria,valor:String(editingDV.valor),data:editingDV.data,forma:editingDV.forma,balanco:editingDV.balanco,parcelas:"1"}:undefined}
-                onDelete={editingDV?requestDeleteDV:undefined}/>
+                initialData={editingDV?{descricao:editingDV.descricao,categoria:editingDV.categoria,valor:String(editingDV.valor),data:editingDV.data,forma:editingDV.forma,balanco:editingDV.balanco,parcelas:"1",dataLimite:""}:undefined}
+                copyData={copyDV??undefined}
+                onDelete={editingDV?requestDeleteDV:undefined}
+                onCopy={editingDV?copyEditDV:undefined}/>
             <GanhoModal open={modalGanho} onClose={closeAll} onSubmit={submitGanho} loading={loading}
                 fontes={configFontes}
                 initialData={editingGanho?{descricao:editingGanho.descricao,fonte:editingGanho.fonte,data:editingGanho.data,valor:String(editingGanho.valor),dataLimite:""}:undefined}

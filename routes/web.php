@@ -1,19 +1,13 @@
 <?php
 
-use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\DespesaFixaController;
-use App\Http\Controllers\DespesaVariavelController;
-use App\Http\Controllers\DividaController;
-use App\Http\Controllers\FonteRendaController;
-use App\Http\Controllers\FormaPagamentoController;
-use App\Http\Controllers\GanhoController;
-use App\Http\Controllers\InvestimentoController;
-use App\Http\Controllers\MetaController;
-use App\Http\Controllers\HomeController;
+use App\Http\Controllers\{CategoriaController, DespesaFixaController, DespesaVariavelController, DividaController, FonteRendaController, FormaPagamentoController, GanhoController, HomeController, InvestimentoController, MetaController};
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/teste', function () {
+    return Inertia::render('teste');
+})->name('teste');
 
 Route::middleware('auth')->group(function () {
     Route::resource('ganhos', GanhoController::class)->only(['store', 'update', 'destroy']);
@@ -32,4 +26,4 @@ Route::get('dashboard', function () {
     return Inertia::render('dashboard');
 })->middleware(['auth', 'verified', 'admin'])->name('dashboard');
 
-require __DIR__.'/settings.php';
+require __DIR__ . '/settings.php';
