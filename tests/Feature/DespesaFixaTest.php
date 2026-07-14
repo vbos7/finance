@@ -160,3 +160,18 @@ test('store validates required fields', function () {
         ->post(route('despesas-fixas.store'), [])
         ->assertSessionHasErrors(['descricao', 'categoria', 'valor', 'vencimento', 'status']);
 });
+
+test('store rejects malformed dates', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('despesas-fixas.store'), [
+            'descricao'  => 'Aluguel',
+            'categoria'  => 'Casa',
+            'valor'      => 2000,
+            'vencimento' => '2026-01-10',
+            'status'     => 'Pago',
+            'dataPgto'   => '31/02/2026',
+        ])
+        ->assertSessionHasErrors(['vencimento', 'dataPgto']);
+});

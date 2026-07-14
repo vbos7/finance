@@ -12,17 +12,63 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory;
+    use Notifiable;
+    use TwoFactorAuthenticatable;
 
-    public function ganhos(): HasMany { return $this->hasMany(Ganho::class); }
-    public function despesasFixas(): HasMany { return $this->hasMany(DespesaFixa::class); }
-    public function despesasVariaveis(): HasMany { return $this->hasMany(DespesaVariavel::class); }
-    public function dividas(): HasMany { return $this->hasMany(Divida::class); }
-    public function investimentos(): HasMany { return $this->hasMany(Investimento::class); }
-    public function metas(): HasMany { return $this->hasMany(Meta::class); }
-    public function fontesRenda(): HasMany { return $this->hasMany(FonteRenda::class); }
-    public function categorias(): HasMany { return $this->hasMany(Categoria::class); }
-    public function formasPagamento(): HasMany { return $this->hasMany(FormaPagamento::class); }
+    /** @return HasMany<Ganho, $this> */
+    public function ganhos(): HasMany
+    {
+        return $this->hasMany(Ganho::class);
+    }
+
+    /** @return HasMany<DespesaFixa, $this> */
+    public function despesasFixas(): HasMany
+    {
+        return $this->hasMany(DespesaFixa::class);
+    }
+
+    /** @return HasMany<DespesaVariavel, $this> */
+    public function despesasVariaveis(): HasMany
+    {
+        return $this->hasMany(DespesaVariavel::class);
+    }
+
+    /** @return HasMany<Divida, $this> */
+    public function dividas(): HasMany
+    {
+        return $this->hasMany(Divida::class);
+    }
+
+    /** @return HasMany<Investimento, $this> */
+    public function investimentos(): HasMany
+    {
+        return $this->hasMany(Investimento::class);
+    }
+
+    /** @return HasMany<Meta, $this> */
+    public function metas(): HasMany
+    {
+        return $this->hasMany(Meta::class);
+    }
+
+    /** @return HasMany<FonteRenda, $this> */
+    public function fontesRenda(): HasMany
+    {
+        return $this->hasMany(FonteRenda::class);
+    }
+
+    /** @return HasMany<Categoria, $this> */
+    public function categorias(): HasMany
+    {
+        return $this->hasMany(Categoria::class);
+    }
+
+    /** @return HasMany<FormaPagamento, $this> */
+    public function formasPagamento(): HasMany
+    {
+        return $this->hasMany(FormaPagamento::class);
+    }
 
     /**
      * The attributes that are mass assignable.
@@ -49,17 +95,14 @@ class User extends Authenticatable
     ];
 
     /**
-     * Get the attributes that should be cast.
+     * The attributes that should be cast.
      *
-     * @return array<string, string>
+     * @var array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'two_factor_confirmed_at' => 'datetime',
-            'is_admin' => 'boolean',
-        ];
-    }
+    protected $casts = [
+        'email_verified_at'       => 'datetime',
+        'password'                => 'hashed',
+        'two_factor_confirmed_at' => 'datetime',
+        'is_admin'                => 'boolean',
+    ];
 }

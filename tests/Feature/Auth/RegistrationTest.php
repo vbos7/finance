@@ -10,9 +10,9 @@ test('registration screen can be rendered', function () {
 
 test('new users can register', function () {
     $response = $this->post(route('register.store'), [
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-        'password' => 'password',
+        'name'                  => 'Test User',
+        'email'                 => 'test@example.com',
+        'password'              => 'password',
         'password_confirmation' => 'password',
     ]);
 
@@ -22,9 +22,9 @@ test('new users can register', function () {
 
 test('new user receives default seed data on registration', function () {
     $this->post(route('register.store'), [
-        'name' => 'Seed User',
-        'email' => 'seed@example.com',
-        'password' => 'password',
+        'name'                  => 'Seed User',
+        'email'                 => 'seed@example.com',
+        'password'              => 'password',
         'password_confirmation' => 'password',
     ]);
 

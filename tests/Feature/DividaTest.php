@@ -16,11 +16,11 @@ test('store creates a divida', function () {
 
     $this->actingAs($user)
         ->post(route('dividas.store'), [
-            'descricao' => 'Cartão de Crédito',
-            'destino' => 'Banco do Brasil',
-            'valor' => 1500,
+            'descricao'  => 'Cartão de Crédito',
+            'destino'    => 'Banco do Brasil',
+            'valor'      => 1500,
             'vencimento' => '10/02/2026',
-            'status' => 'Pendente',
+            'status'     => 'Pendente',
         ])
         ->assertRedirect();
 
@@ -37,11 +37,11 @@ test('store with recurrence creates monthly records', function () {
 
     $this->actingAs($user)
         ->post(route('dividas.store'), [
-            'descricao' => 'Empréstimo',
-            'destino' => 'Banco',
-            'valor' => 800,
+            'descricao'  => 'Empréstimo',
+            'destino'    => 'Banco',
+            'valor'      => 800,
             'vencimento' => '05/01/2026',
-            'status' => 'Pendente',
+            'status'     => 'Pendente',
             'dataLimite' => '06/2026',
         ])
         ->assertRedirect();
@@ -55,22 +55,22 @@ test('store with recurrence creates monthly records', function () {
 });
 
 test('update modifies a divida', function () {
-    $user = User::factory()->create();
+    $user   = User::factory()->create();
     $divida = $user->dividas()->create([
-        'descricao' => 'Cartão',
-        'destino' => 'Banco',
-        'valor' => 500,
+        'descricao'  => 'Cartão',
+        'destino'    => 'Banco',
+        'valor'      => 500,
         'vencimento' => '2026-02-10',
-        'status' => 'Pendente',
+        'status'     => 'Pendente',
     ]);
 
     $this->actingAs($user)
         ->put(route('dividas.update', $divida->id), [
-            'descricao' => 'Cartão Atualizado',
-            'destino' => 'Outro Banco',
-            'valor' => 600,
+            'descricao'  => 'Cartão Atualizado',
+            'destino'    => 'Outro Banco',
+            'valor'      => 600,
             'vencimento' => '15/02/2026',
-            'status' => 'Pago',
+            'status'     => 'Pago',
         ])
         ->assertRedirect();
 
@@ -81,13 +81,13 @@ test('update modifies a divida', function () {
 });
 
 test('destroy deletes a divida', function () {
-    $user = User::factory()->create();
+    $user   = User::factory()->create();
     $divida = $user->dividas()->create([
-        'descricao' => 'Cartão',
-        'destino' => 'Banco',
-        'valor' => 500,
+        'descricao'  => 'Cartão',
+        'destino'    => 'Banco',
+        'valor'      => 500,
         'vencimento' => '2026-02-10',
-        'status' => 'Pendente',
+        'status'     => 'Pendente',
     ]);
 
     $this->actingAs($user)
@@ -98,23 +98,23 @@ test('destroy deletes a divida', function () {
 });
 
 test('user cannot access another user divida', function () {
-    $user1 = User::factory()->create();
-    $user2 = User::factory()->create();
+    $user1  = User::factory()->create();
+    $user2  = User::factory()->create();
     $divida = $user1->dividas()->create([
-        'descricao' => 'Cartão',
-        'destino' => 'Banco',
-        'valor' => 500,
+        'descricao'  => 'Cartão',
+        'destino'    => 'Banco',
+        'valor'      => 500,
         'vencimento' => '2026-02-10',
-        'status' => 'Pendente',
+        'status'     => 'Pendente',
     ]);
 
     $this->actingAs($user2)
         ->put(route('dividas.update', $divida->id), [
-            'descricao' => 'Hack',
-            'destino' => 'Hack',
-            'valor' => 9999,
+            'descricao'  => 'Hack',
+            'destino'    => 'Hack',
+            'valor'      => 9999,
             'vencimento' => '10/02/2026',
-            'status' => 'Pago',
+            'status'     => 'Pago',
         ])
         ->assertNotFound();
 

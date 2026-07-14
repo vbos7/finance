@@ -166,3 +166,35 @@ test('store validates required fields', function () {
         ->post(route('despesas-variaveis.store'), [])
         ->assertSessionHasErrors(['descricao', 'categoria', 'valor', 'data', 'balanco']);
 });
+
+test('store rejects malformed dates', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('despesas-variaveis.store'), [
+            'descricao'  => 'Supermercado',
+            'categoria'  => 'Mercado',
+            'valor'      => 350,
+            'data'       => '2026-01-10',
+            'balanco'    => 'janeiro',
+            'dataLimite' => '32/13',
+        ])
+        ->assertSessionHasErrors(['data', 'balanco', 'dataLimite']);
+});
+
+test('store rejects dataLimite beyond 60 months', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('despesas-variaveis.store'), [
+            'descricao'  => 'Netflix',
+            'categoria'  => 'Assinaturas',
+            'valor'      => 45,
+            'data'       => '12/01/2026',
+            'balanco'    => '01/2026',
+            'dataLimite' => '01/2099',
+        ])
+        ->assertSessionHasErrors(['dataLimite']);
+
+    expect($user->despesasVariaveis()->count())->toBe(0);
+});

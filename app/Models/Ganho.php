@@ -9,14 +9,13 @@ class Ganho extends Model
 {
     protected $fillable = ['descricao', 'fonte', 'data', 'valor'];
 
-    protected function casts(): array
-    {
-        return [
-            'data' => 'date',
-            'valor' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'data'  => 'date',
+        'valor' => 'decimal:2',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

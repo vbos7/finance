@@ -3,21 +3,22 @@
 namespace App\Http\Controllers;
 
 use Carbon\Carbon;
-use Illuminate\Http\Request;
+use Illuminate\Http\{RedirectResponse, Request};
+use Illuminate\Validation\ValidationException;
 
 class DespesaVariavelController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
             'descricao'  => 'required|string|max:255',
             'categoria'  => 'required|string|max:255',
             'valor'      => 'required|numeric|min:0',
-            'data'       => 'required|string',
+            'data'       => 'required|string|date_format:d/m/Y',
             'forma'      => 'nullable|string|max:255',
-            'balanco'    => 'required|string',
+            'balanco'    => 'required|string|date_format:m/Y',
             'parcelas'   => 'nullable|integer|min:1|max:12',
-            'dataLimite' => 'nullable|string',
+            'dataLimite' => 'nullable|string|date_format:m/Y',
         ]);
 
         $data['data'] = Carbon::createFromFormat('d/m/Y', $data['data'])->toDateString();
@@ -28,6 +29,12 @@ class DespesaVariavelController extends Controller
             : null;
 
         unset($data['balanco'], $data['parcelas'], $data['dataLimite']);
+
+        if ($dataLimite && $balancoDate->diffInMonths($dataLimite) > 60) {
+            throw ValidationException::withMessages([
+                'dataLimite' => 'A data limite não pode ultrapassar 60 meses.',
+            ]);
+        }
 
         if ($dataLimite && $dataLimite->gte($balancoDate)) {
             // Assinatura: criar mesmo registro em cada mês até data limite,
@@ -69,7 +76,7 @@ class DespesaVariavelController extends Controller
         return back();
     }
 
-    public function update(Request $request, int $id)
+    public function update(Request $request, int $id): RedirectResponse
     {
         $record = $request->user()->despesasVariaveis()->findOrFail($id);
 
@@ -77,9 +84,9 @@ class DespesaVariavelController extends Controller
             'descricao' => 'required|string|max:255',
             'categoria' => 'required|string|max:255',
             'valor'     => 'required|numeric|min:0',
-            'data'      => 'required|string',
+            'data'      => 'required|string|date_format:d/m/Y',
             'forma'     => 'nullable|string|max:255',
-            'balanco'   => 'required|string',
+            'balanco'   => 'required|string|date_format:m/Y',
         ]);
 
         $data['data']    = Carbon::createFromFormat('d/m/Y', $data['data'])->toDateString();
@@ -90,7 +97,7 @@ class DespesaVariavelController extends Controller
         return back();
     }
 
-    public function destroy(Request $request, int $id)
+    public function destroy(Request $request, int $id): RedirectResponse
     {
         $request->user()->despesasVariaveis()->findOrFail($id)->delete();
 

@@ -9,16 +9,15 @@ class Investimento extends Model
 {
     protected $fillable = ['produto', 'empresa', 'valor', 'quantidade', 'tipo_ativo', 'provento', 'frequencia', 'data'];
 
-    protected function casts(): array
-    {
-        return [
-            'data' => 'date',
-            'valor' => 'decimal:2',
-            'provento' => 'decimal:2',
-            'quantidade' => 'integer',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'data'       => 'date',
+        'valor'      => 'decimal:2',
+        'provento'   => 'decimal:2',
+        'quantidade' => 'integer',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

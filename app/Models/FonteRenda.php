@@ -11,13 +11,12 @@ class FonteRenda extends Model
 
     protected $fillable = ['nome', 'icone', 'meta_anual'];
 
-    protected function casts(): array
-    {
-        return [
-            'meta_anual' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'meta_anual' => 'decimal:2',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

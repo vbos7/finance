@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use Illuminate\Http\{RedirectResponse, Request};
 
 class CategoriaController extends Controller
 {
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
-            'nome' => 'required|string|max:255',
-            'icone' => 'nullable|string|max:255',
+            'nome'         => 'required|string|max:255',
+            'icone'        => 'nullable|string|max:255',
             'limite_anual' => 'nullable|numeric|min:0',
         ]);
 
@@ -19,13 +19,13 @@ class CategoriaController extends Controller
         return back();
     }
 
-    public function update(Request $request, int $id)
+    public function update(Request $request, int $id): RedirectResponse
     {
         $record = $request->user()->categorias()->findOrFail($id);
 
         $data = $request->validate([
-            'nome' => 'required|string|max:255',
-            'icone' => 'nullable|string|max:255',
+            'nome'         => 'required|string|max:255',
+            'icone'        => 'nullable|string|max:255',
             'limite_anual' => 'nullable|numeric|min:0',
         ]);
 
@@ -34,9 +34,10 @@ class CategoriaController extends Controller
         return back();
     }
 
-    public function destroy(Request $request, int $id)
+    public function destroy(Request $request, int $id): RedirectResponse
     {
         $request->user()->categorias()->findOrFail($id)->delete();
+
         return back();
     }
 }

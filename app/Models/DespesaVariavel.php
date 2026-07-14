@@ -11,15 +11,14 @@ class DespesaVariavel extends Model
 
     protected $fillable = ['descricao', 'categoria', 'valor', 'data', 'forma', 'balanco'];
 
-    protected function casts(): array
-    {
-        return [
-            'data' => 'date',
-            'balanco' => 'date',
-            'valor' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'data'    => 'date',
+        'balanco' => 'date',
+        'valor'   => 'decimal:2',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

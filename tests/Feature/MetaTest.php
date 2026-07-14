@@ -16,7 +16,7 @@ test('store creates a meta', function () {
 
     $this->actingAs($user)
         ->post(route('metas.store'), [
-            'nome' => 'Casamento',
+            'nome'  => 'Casamento',
             'icone' => 'Gem',
             'valor' => 50000,
         ])
@@ -24,23 +24,23 @@ test('store creates a meta', function () {
 
     $this->assertDatabaseHas('metas', [
         'user_id' => $user->id,
-        'nome' => 'Casamento',
-        'icone' => 'Gem',
-        'valor' => 50000,
+        'nome'    => 'Casamento',
+        'icone'   => 'Gem',
+        'valor'   => 50000,
     ]);
 });
 
 test('update modifies a meta', function () {
     $user = User::factory()->create();
     $meta = $user->metas()->create([
-        'nome' => 'Casamento',
+        'nome'  => 'Casamento',
         'icone' => 'Gem',
         'valor' => 50000,
     ]);
 
     $this->actingAs($user)
         ->put(route('metas.update', $meta->id), [
-            'nome' => 'Casamento Atualizado',
+            'nome'  => 'Casamento Atualizado',
             'icone' => 'Heart',
             'valor' => 60000,
         ])
@@ -54,7 +54,7 @@ test('update modifies a meta', function () {
 test('destroy deletes a meta', function () {
     $user = User::factory()->create();
     $meta = $user->metas()->create([
-        'nome' => 'Casamento',
+        'nome'  => 'Casamento',
         'icone' => 'Gem',
         'valor' => 50000,
     ]);
@@ -69,7 +69,7 @@ test('destroy deletes a meta', function () {
 test('investir creates an investimento from meta', function () {
     $user = User::factory()->create();
     $meta = $user->metas()->create([
-        'nome' => 'Casamento',
+        'nome'  => 'Casamento',
         'icone' => 'Gem',
         'valor' => 50000,
     ]);
@@ -77,7 +77,7 @@ test('investir creates an investimento from meta', function () {
     $this->actingAs($user)
         ->post(route('metas.investir', $meta->id), [
             'valor' => 1000,
-            'data' => '15/01/2026',
+            'data'  => '15/01/2026',
         ])
         ->assertRedirect();
 
@@ -92,15 +92,15 @@ test('investir creates an investimento from meta', function () {
 test('investir with recurrence creates monthly investimentos', function () {
     $user = User::factory()->create();
     $meta = $user->metas()->create([
-        'nome' => 'Imóvel',
+        'nome'  => 'Imóvel',
         'icone' => 'House',
         'valor' => 200000,
     ]);
 
     $this->actingAs($user)
         ->post(route('metas.investir', $meta->id), [
-            'valor' => 2000,
-            'data' => '10/01/2026',
+            'valor'      => 2000,
+            'data'       => '10/01/2026',
             'dataLimite' => '05/2026',
         ])
         ->assertRedirect();
@@ -117,15 +117,15 @@ test('investir with recurrence creates monthly investimentos', function () {
 test('user cannot access another user meta', function () {
     $user1 = User::factory()->create();
     $user2 = User::factory()->create();
-    $meta = $user1->metas()->create([
-        'nome' => 'Casamento',
+    $meta  = $user1->metas()->create([
+        'nome'  => 'Casamento',
         'icone' => 'Gem',
         'valor' => 50000,
     ]);
 
     $this->actingAs($user2)
         ->put(route('metas.update', $meta->id), [
-            'nome' => 'Hack',
+            'nome'  => 'Hack',
             'icone' => 'X',
             'valor' => 1,
         ])
@@ -138,7 +138,7 @@ test('user cannot access another user meta', function () {
     $this->actingAs($user2)
         ->post(route('metas.investir', $meta->id), [
             'valor' => 100,
-            'data' => '15/01/2026',
+            'data'  => '15/01/2026',
         ])
         ->assertNotFound();
 });
