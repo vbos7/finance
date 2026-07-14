@@ -11,13 +11,12 @@ class FormaPagamento extends Model
 
     protected $fillable = ['nome', 'icone', 'limite_anual'];
 
-    protected function casts(): array
-    {
-        return [
-            'limite_anual' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'limite_anual' => 'decimal:2',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

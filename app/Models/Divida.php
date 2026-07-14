@@ -9,14 +9,13 @@ class Divida extends Model
 {
     protected $fillable = ['descricao', 'destino', 'valor', 'vencimento', 'status'];
 
-    protected function casts(): array
-    {
-        return [
-            'vencimento' => 'date',
-            'valor' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'vencimento' => 'date',
+        'valor'      => 'decimal:2',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

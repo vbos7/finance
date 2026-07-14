@@ -18,10 +18,10 @@ test('store creates a despesa variavel', function () {
         ->post(route('despesas-variaveis.store'), [
             'descricao' => 'Supermercado',
             'categoria' => 'Mercado',
-            'valor' => 350,
-            'data' => '10/01/2026',
-            'forma' => 'Cartão de Crédito',
-            'balanco' => '01/2026',
+            'valor'     => 350,
+            'data'      => '10/01/2026',
+            'forma'     => 'Cartão de Crédito',
+            'balanco'   => '01/2026',
         ])
         ->assertRedirect();
 
@@ -38,22 +38,27 @@ test('store with recurrence (assinatura) creates monthly records', function () {
 
     $this->actingAs($user)
         ->post(route('despesas-variaveis.store'), [
-            'descricao' => 'Netflix',
-            'categoria' => 'Assinaturas',
-            'valor' => 45,
-            'data' => '01/01/2026',
-            'forma' => 'Cartão de Crédito',
-            'balanco' => '01/2026',
+            'descricao'  => 'Netflix',
+            'categoria'  => 'Assinaturas',
+            'valor'      => 45,
+            'data'       => '12/01/2026',
+            'forma'      => 'Cartão de Crédito',
+            'balanco'    => '02/2026',
             'dataLimite' => '06/2026',
         ])
         ->assertRedirect();
 
     $despesas = $user->despesasVariaveis()->orderBy('balanco')->get();
 
-    expect($despesas)->toHaveCount(6);
-    expect($despesas[0]->balanco->format('Y-m-d'))->toBe('2026-01-01');
-    expect($despesas[5]->balanco->format('Y-m-d'))->toBe('2026-06-01');
+    expect($despesas)->toHaveCount(5);
+    expect($despesas[0]->balanco->format('Y-m-d'))->toBe('2026-02-01');
+    expect($despesas[4]->balanco->format('Y-m-d'))->toBe('2026-06-01');
     expect($despesas->every(fn ($d) => $d->descricao === 'Netflix'))->toBeTrue();
+
+    // A data de cobrança avança um mês a cada balanço
+    expect($despesas[0]->data->format('Y-m-d'))->toBe('2026-01-12');
+    expect($despesas[1]->data->format('Y-m-d'))->toBe('2026-02-12');
+    expect($despesas[4]->data->format('Y-m-d'))->toBe('2026-05-12');
 });
 
 test('store with parcelas creates installment records', function () {
@@ -63,11 +68,11 @@ test('store with parcelas creates installment records', function () {
         ->post(route('despesas-variaveis.store'), [
             'descricao' => 'Notebook',
             'categoria' => 'Shopping',
-            'valor' => 3000,
-            'data' => '15/01/2026',
-            'forma' => 'Cartão de Crédito',
-            'balanco' => '01/2026',
-            'parcelas' => 3,
+            'valor'     => 3000,
+            'data'      => '15/01/2026',
+            'forma'     => 'Cartão de Crédito',
+            'balanco'   => '01/2026',
+            'parcelas'  => 3,
         ])
         ->assertRedirect();
 
@@ -84,24 +89,24 @@ test('store with parcelas creates installment records', function () {
 });
 
 test('update modifies a despesa variavel', function () {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
     $despesa = $user->despesasVariaveis()->create([
         'descricao' => 'Supermercado',
         'categoria' => 'Mercado',
-        'valor' => 350,
-        'data' => '2026-01-10',
-        'forma' => 'Pix',
-        'balanco' => '2026-01-01',
+        'valor'     => 350,
+        'data'      => '2026-01-10',
+        'forma'     => 'Pix',
+        'balanco'   => '2026-01-01',
     ]);
 
     $this->actingAs($user)
         ->put(route('despesas-variaveis.update', $despesa->id), [
             'descricao' => 'Supermercado Atualizado',
             'categoria' => 'Mercado',
-            'valor' => 400,
-            'data' => '12/01/2026',
-            'forma' => 'Cartão de Débito',
-            'balanco' => '01/2026',
+            'valor'     => 400,
+            'data'      => '12/01/2026',
+            'forma'     => 'Cartão de Débito',
+            'balanco'   => '01/2026',
         ])
         ->assertRedirect();
 
@@ -111,13 +116,13 @@ test('update modifies a despesa variavel', function () {
 });
 
 test('destroy deletes a despesa variavel', function () {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
     $despesa = $user->despesasVariaveis()->create([
         'descricao' => 'Supermercado',
         'categoria' => 'Mercado',
-        'valor' => 350,
-        'data' => '2026-01-10',
-        'balanco' => '2026-01-01',
+        'valor'     => 350,
+        'data'      => '2026-01-10',
+        'balanco'   => '2026-01-01',
     ]);
 
     $this->actingAs($user)
@@ -128,24 +133,24 @@ test('destroy deletes a despesa variavel', function () {
 });
 
 test('user cannot access another user despesa variavel', function () {
-    $user1 = User::factory()->create();
-    $user2 = User::factory()->create();
+    $user1   = User::factory()->create();
+    $user2   = User::factory()->create();
     $despesa = $user1->despesasVariaveis()->create([
         'descricao' => 'Supermercado',
         'categoria' => 'Mercado',
-        'valor' => 350,
-        'data' => '2026-01-10',
-        'balanco' => '2026-01-01',
+        'valor'     => 350,
+        'data'      => '2026-01-10',
+        'balanco'   => '2026-01-01',
     ]);
 
     $this->actingAs($user2)
         ->put(route('despesas-variaveis.update', $despesa->id), [
             'descricao' => 'Hack',
             'categoria' => 'Hack',
-            'valor' => 1,
-            'data' => '10/01/2026',
-            'forma' => 'Pix',
-            'balanco' => '01/2026',
+            'valor'     => 1,
+            'data'      => '10/01/2026',
+            'forma'     => 'Pix',
+            'balanco'   => '01/2026',
         ])
         ->assertNotFound();
 
@@ -160,4 +165,36 @@ test('store validates required fields', function () {
     $this->actingAs($user)
         ->post(route('despesas-variaveis.store'), [])
         ->assertSessionHasErrors(['descricao', 'categoria', 'valor', 'data', 'balanco']);
+});
+
+test('store rejects malformed dates', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('despesas-variaveis.store'), [
+            'descricao'  => 'Supermercado',
+            'categoria'  => 'Mercado',
+            'valor'      => 350,
+            'data'       => '2026-01-10',
+            'balanco'    => 'janeiro',
+            'dataLimite' => '32/13',
+        ])
+        ->assertSessionHasErrors(['data', 'balanco', 'dataLimite']);
+});
+
+test('store rejects dataLimite beyond 60 months', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('despesas-variaveis.store'), [
+            'descricao'  => 'Netflix',
+            'categoria'  => 'Assinaturas',
+            'valor'      => 45,
+            'data'       => '12/01/2026',
+            'balanco'    => '01/2026',
+            'dataLimite' => '01/2099',
+        ])
+        ->assertSessionHasErrors(['dataLimite']);
+
+    expect($user->despesasVariaveis()->count())->toBe(0);
 });

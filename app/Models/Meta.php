@@ -9,13 +9,12 @@ class Meta extends Model
 {
     protected $fillable = ['nome', 'icone', 'valor'];
 
-    protected function casts(): array
-    {
-        return [
-            'valor' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'valor' => 'decimal:2',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

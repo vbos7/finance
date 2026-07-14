@@ -11,15 +11,14 @@ class DespesaFixa extends Model
 
     protected $fillable = ['descricao', 'categoria', 'valor', 'vencimento', 'status', 'data_pgto', 'forma'];
 
-    protected function casts(): array
-    {
-        return [
-            'vencimento' => 'date',
-            'data_pgto' => 'date',
-            'valor' => 'decimal:2',
-        ];
-    }
+    /** @var array<string, string> */
+    protected $casts = [
+        'vencimento' => 'date',
+        'data_pgto'  => 'date',
+        'valor'      => 'decimal:2',
+    ];
 
+    /** @return BelongsTo<User, $this> */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

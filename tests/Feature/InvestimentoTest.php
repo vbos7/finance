@@ -16,14 +16,14 @@ test('store creates an investimento', function () {
 
     $this->actingAs($user)
         ->post(route('investimentos.store'), [
-            'produto' => 'PETR4',
-            'empresa' => 'Petrobras',
-            'valor' => 30,
+            'produto'    => 'PETR4',
+            'empresa'    => 'Petrobras',
+            'valor'      => 30,
             'quantidade' => 100,
-            'tipoAtivo' => 'Ação',
-            'provento' => 1.50,
+            'tipoAtivo'  => 'Ação',
+            'provento'   => 1.50,
             'frequencia' => 'Trimestral',
-            'data' => '10/01/2026',
+            'data'       => '10/01/2026',
         ])
         ->assertRedirect();
 
@@ -41,14 +41,14 @@ test('store with recurrence creates monthly records', function () {
 
     $this->actingAs($user)
         ->post(route('investimentos.store'), [
-            'produto' => 'Tesouro Selic',
-            'empresa' => 'Tesouro Nacional',
-            'valor' => 500,
+            'produto'    => 'Tesouro Selic',
+            'empresa'    => 'Tesouro Nacional',
+            'valor'      => 500,
             'quantidade' => 1,
-            'tipoAtivo' => 'Renda Fixa',
-            'provento' => 0,
+            'tipoAtivo'  => 'Renda Fixa',
+            'provento'   => 0,
             'frequencia' => 'Mensal',
-            'data' => '05/01/2026',
+            'data'       => '05/01/2026',
             'dataLimite' => '03/2026',
         ])
         ->assertRedirect();
@@ -64,27 +64,27 @@ test('store with recurrence creates monthly records', function () {
 
 test('update modifies an investimento', function () {
     $user = User::factory()->create();
-    $inv = $user->investimentos()->create([
-        'produto' => 'PETR4',
-        'empresa' => 'Petrobras',
-        'valor' => 30,
+    $inv  = $user->investimentos()->create([
+        'produto'    => 'PETR4',
+        'empresa'    => 'Petrobras',
+        'valor'      => 30,
         'quantidade' => 100,
         'tipo_ativo' => 'Ação',
-        'provento' => 1.50,
+        'provento'   => 1.50,
         'frequencia' => 'Trimestral',
-        'data' => '2026-01-10',
+        'data'       => '2026-01-10',
     ]);
 
     $this->actingAs($user)
         ->put(route('investimentos.update', $inv->id), [
-            'produto' => 'PETR4',
-            'empresa' => 'Petrobras',
-            'valor' => 35,
+            'produto'    => 'PETR4',
+            'empresa'    => 'Petrobras',
+            'valor'      => 35,
             'quantidade' => 200,
-            'tipoAtivo' => 'Ação',
-            'provento' => 2.00,
+            'tipoAtivo'  => 'Ação',
+            'provento'   => 2.00,
             'frequencia' => 'Trimestral',
-            'data' => '15/01/2026',
+            'data'       => '15/01/2026',
         ])
         ->assertRedirect();
 
@@ -96,15 +96,15 @@ test('update modifies an investimento', function () {
 
 test('destroy deletes an investimento', function () {
     $user = User::factory()->create();
-    $inv = $user->investimentos()->create([
-        'produto' => 'PETR4',
-        'empresa' => 'Petrobras',
-        'valor' => 30,
+    $inv  = $user->investimentos()->create([
+        'produto'    => 'PETR4',
+        'empresa'    => 'Petrobras',
+        'valor'      => 30,
         'quantidade' => 100,
         'tipo_ativo' => 'Ação',
-        'provento' => 0,
+        'provento'   => 0,
         'frequencia' => 'Mensal',
-        'data' => '2026-01-10',
+        'data'       => '2026-01-10',
     ]);
 
     $this->actingAs($user)
@@ -117,27 +117,27 @@ test('destroy deletes an investimento', function () {
 test('user cannot access another user investimento', function () {
     $user1 = User::factory()->create();
     $user2 = User::factory()->create();
-    $inv = $user1->investimentos()->create([
-        'produto' => 'PETR4',
-        'empresa' => 'Petrobras',
-        'valor' => 30,
+    $inv   = $user1->investimentos()->create([
+        'produto'    => 'PETR4',
+        'empresa'    => 'Petrobras',
+        'valor'      => 30,
         'quantidade' => 100,
         'tipo_ativo' => 'Ação',
-        'provento' => 0,
+        'provento'   => 0,
         'frequencia' => 'Mensal',
-        'data' => '2026-01-10',
+        'data'       => '2026-01-10',
     ]);
 
     $this->actingAs($user2)
         ->put(route('investimentos.update', $inv->id), [
-            'produto' => 'Hack',
-            'empresa' => 'Hack',
-            'valor' => 9999,
+            'produto'    => 'Hack',
+            'empresa'    => 'Hack',
+            'valor'      => 9999,
             'quantidade' => 1,
-            'tipoAtivo' => 'Hack',
-            'provento' => 0,
+            'tipoAtivo'  => 'Hack',
+            'provento'   => 0,
             'frequencia' => 'Mensal',
-            'data' => '10/01/2026',
+            'data'       => '10/01/2026',
         ])
         ->assertNotFound();
 

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { format, parse, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChevronDownIcon } from "lucide-react";
+import { ChevronDownIcon, CopyIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -25,7 +25,9 @@ interface Props {
     onClose: () => void;
     onSubmit: (data: DespesaFormData) => void;
     initialData?: DespesaFormData;
+    copyData?: DespesaFormData;
     onDelete?: () => void;
+    onCopy?: () => void;
     categorias?: string[];
     formas?: string[];
     loading?: boolean;
@@ -75,7 +77,7 @@ function dateToBalanco(d: Date | undefined): string {
     return `${mm}/${d.getFullYear()}`;
 }
 
-export default function DespesaVariavelModal({ open, onClose, onSubmit, initialData, onDelete, categorias, formas, loading }: Props) {
+export default function DespesaVariavelModal({ open, onClose, onSubmit, initialData, copyData, onDelete, onCopy, categorias, formas, loading }: Props) {
     const [form, setForm] = useState<DespesaFormData>(empty);
     const sf = (k: keyof DespesaFormData, v: string) => setForm(p => ({ ...p, [k]: v }));
     const editing = !!initialData;
@@ -90,7 +92,7 @@ export default function DespesaVariavelModal({ open, onClose, onSubmit, initialD
 
     useEffect(() => {
         if (open) {
-            const init = initialData ?? empty;
+            const init = initialData ?? copyData ?? empty;
             setForm({ ...init, parcelas: init.parcelas || "1" });
         }
     }, [open]);
@@ -260,6 +262,11 @@ export default function DespesaVariavelModal({ open, onClose, onSubmit, initialD
                         {editing && onDelete && (
                             <button type="button" onClick={onDelete} disabled={loading} className="h-10 px-4 rounded-md border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 active:bg-red-100 transition-colors disabled:opacity-50">
                                 Excluir
+                            </button>
+                        )}
+                        {editing && onCopy && (
+                            <button type="button" onClick={onCopy} disabled={loading} className="h-10 px-4 rounded-md border border-zinc-200 text-zinc-700 text-sm font-medium hover:bg-zinc-50 active:bg-zinc-100 transition-colors disabled:opacity-50 inline-flex items-center gap-1.5">
+                                <CopyIcon className="size-4" /> Copiar
                             </button>
                         )}
                         <button type="submit" disabled={loading} className="flex-1 h-10 rounded-md bg-zinc-900 text-white text-sm font-medium hover:bg-zinc-800 active:bg-zinc-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">

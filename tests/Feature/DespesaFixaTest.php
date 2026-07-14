@@ -16,13 +16,13 @@ test('store creates a despesa fixa', function () {
 
     $this->actingAs($user)
         ->post(route('despesas-fixas.store'), [
-            'descricao' => 'Aluguel',
-            'categoria' => 'Casa',
-            'valor' => 2000,
+            'descricao'  => 'Aluguel',
+            'categoria'  => 'Casa',
+            'valor'      => 2000,
             'vencimento' => '10/01/2026',
-            'status' => 'Pendente',
-            'dataPgto' => '',
-            'forma' => 'Pix',
+            'status'     => 'Pendente',
+            'dataPgto'   => '',
+            'forma'      => 'Pix',
         ])
         ->assertRedirect();
 
@@ -39,13 +39,13 @@ test('store with data de pagamento saves correctly', function () {
 
     $this->actingAs($user)
         ->post(route('despesas-fixas.store'), [
-            'descricao' => 'Internet',
-            'categoria' => 'Casa',
-            'valor' => 120,
+            'descricao'  => 'Internet',
+            'categoria'  => 'Casa',
+            'valor'      => 120,
             'vencimento' => '15/01/2026',
-            'status' => 'Pago',
-            'dataPgto' => '14/01/2026',
-            'forma' => 'Pix',
+            'status'     => 'Pago',
+            'dataPgto'   => '14/01/2026',
+            'forma'      => 'Pix',
         ])
         ->assertRedirect();
 
@@ -57,24 +57,24 @@ test('store with data de pagamento saves correctly', function () {
 });
 
 test('update modifies a despesa fixa', function () {
-    $user = User::factory()->create();
+    $user    = User::factory()->create();
     $despesa = $user->despesasFixas()->create([
-        'descricao' => 'Aluguel',
-        'categoria' => 'Casa',
-        'valor' => 2000,
+        'descricao'  => 'Aluguel',
+        'categoria'  => 'Casa',
+        'valor'      => 2000,
         'vencimento' => '2026-01-10',
-        'status' => 'Pendente',
+        'status'     => 'Pendente',
     ]);
 
     $this->actingAs($user)
         ->put(route('despesas-fixas.update', $despesa->id), [
-            'descricao' => 'Aluguel Atualizado',
-            'categoria' => 'Casa',
-            'valor' => 2200,
+            'descricao'  => 'Aluguel Atualizado',
+            'categoria'  => 'Casa',
+            'valor'      => 2200,
             'vencimento' => '10/02/2026',
-            'status' => 'Pago',
-            'dataPgto' => '09/02/2026',
-            'forma' => 'Boleto',
+            'status'     => 'Pago',
+            'dataPgto'   => '09/02/2026',
+            'forma'      => 'Boleto',
         ])
         ->assertRedirect();
 
@@ -84,14 +84,40 @@ test('update modifies a despesa fixa', function () {
     expect($despesa->status)->toBe('Pago');
 });
 
-test('destroy deletes a despesa fixa', function () {
+test('home shows despesa fixa in payment month when paid, due month otherwise', function () {
     $user = User::factory()->create();
+    $user->despesasFixas()->create([
+        'descricao'  => 'Aluguel',
+        'categoria'  => 'Casa',
+        'valor'      => 2000,
+        'vencimento' => '2026-04-10',
+        'status'     => 'Pago',
+        'data_pgto'  => '2026-05-02',
+    ]);
+    $user->despesasFixas()->create([
+        'descricao'  => 'Internet',
+        'categoria'  => 'Casa',
+        'valor'      => 120,
+        'vencimento' => '2026-04-15',
+        'status'     => 'Pendente',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('home', ['ano' => 2026]))
+        ->assertInertia(fn ($page) => $page
+            ->where('fixas.0.balanco', 'Maio')
+            ->where('fixas.0.vencimento', '10/04/2026')
+            ->where('fixas.1.balanco', 'Abril'));
+});
+
+test('destroy deletes a despesa fixa', function () {
+    $user    = User::factory()->create();
     $despesa = $user->despesasFixas()->create([
-        'descricao' => 'Aluguel',
-        'categoria' => 'Casa',
-        'valor' => 2000,
+        'descricao'  => 'Aluguel',
+        'categoria'  => 'Casa',
+        'valor'      => 2000,
         'vencimento' => '2026-01-10',
-        'status' => 'Pendente',
+        'status'     => 'Pendente',
     ]);
 
     $this->actingAs($user)
@@ -102,23 +128,23 @@ test('destroy deletes a despesa fixa', function () {
 });
 
 test('user cannot access another user despesa fixa', function () {
-    $user1 = User::factory()->create();
-    $user2 = User::factory()->create();
+    $user1   = User::factory()->create();
+    $user2   = User::factory()->create();
     $despesa = $user1->despesasFixas()->create([
-        'descricao' => 'Aluguel',
-        'categoria' => 'Casa',
-        'valor' => 2000,
+        'descricao'  => 'Aluguel',
+        'categoria'  => 'Casa',
+        'valor'      => 2000,
         'vencimento' => '2026-01-10',
-        'status' => 'Pendente',
+        'status'     => 'Pendente',
     ]);
 
     $this->actingAs($user2)
         ->put(route('despesas-fixas.update', $despesa->id), [
-            'descricao' => 'Hack',
-            'categoria' => 'Hack',
-            'valor' => 1,
+            'descricao'  => 'Hack',
+            'categoria'  => 'Hack',
+            'valor'      => 1,
             'vencimento' => '10/01/2026',
-            'status' => 'Pago',
+            'status'     => 'Pago',
         ])
         ->assertNotFound();
 
@@ -133,4 +159,19 @@ test('store validates required fields', function () {
     $this->actingAs($user)
         ->post(route('despesas-fixas.store'), [])
         ->assertSessionHasErrors(['descricao', 'categoria', 'valor', 'vencimento', 'status']);
+});
+
+test('store rejects malformed dates', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)
+        ->post(route('despesas-fixas.store'), [
+            'descricao'  => 'Aluguel',
+            'categoria'  => 'Casa',
+            'valor'      => 2000,
+            'vencimento' => '2026-01-10',
+            'status'     => 'Pago',
+            'dataPgto'   => '31/02/2026',
+        ])
+        ->assertSessionHasErrors(['vencimento', 'dataPgto']);
 });

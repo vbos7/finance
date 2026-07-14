@@ -3,8 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Laravel\Fortify\Features;
-use Laravel\Fortify\InteractsWithTwoFactorState;
+use Laravel\Fortify\{Features, InteractsWithTwoFactorState};
 
 class TwoFactorAuthenticationRequest extends FormRequest
 {

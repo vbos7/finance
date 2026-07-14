@@ -44,9 +44,9 @@ jobs:
           DB_DATABASE: database/database.sqlite
         run: php artisan test --parallel
 
+      - name: Executar Larastan (PHPStan nível 6)
+        run: vendor/bin/phpstan analyse --no-progress
+
 # - name: Execute Laravel Pint
 #   run: vendor/bin/pint --test
-
-# - name: Execute Larastan
-#   run: vendor/bin/phpstan analyse
 

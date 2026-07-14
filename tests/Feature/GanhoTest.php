@@ -17,9 +17,9 @@ test('store creates a ganho', function () {
     $this->actingAs($user)
         ->post(route('ganhos.store'), [
             'descricao' => 'Salário',
-            'fonte' => 'Trabalho',
-            'data' => '15/01/2026',
-            'valor' => 5000,
+            'fonte'     => 'Trabalho',
+            'data'      => '15/01/2026',
+            'valor'     => 5000,
         ])
         ->assertRedirect();
 
@@ -36,10 +36,10 @@ test('store with recurrence creates monthly records', function () {
 
     $this->actingAs($user)
         ->post(route('ganhos.store'), [
-            'descricao' => 'Salário',
-            'fonte' => 'Trabalho',
-            'data' => '10/01/2026',
-            'valor' => 5000,
+            'descricao'  => 'Salário',
+            'fonte'      => 'Trabalho',
+            'data'       => '10/01/2026',
+            'valor'      => 5000,
             'dataLimite' => '04/2026',
         ])
         ->assertRedirect();
@@ -59,9 +59,9 @@ test('store without dataLimite creates single record', function () {
     $this->actingAs($user)
         ->post(route('ganhos.store'), [
             'descricao' => 'Freelance',
-            'fonte' => 'Freelance',
-            'data' => '20/03/2026',
-            'valor' => 1500,
+            'fonte'     => 'Freelance',
+            'data'      => '20/03/2026',
+            'valor'     => 1500,
         ])
         ->assertRedirect();
 
@@ -69,20 +69,20 @@ test('store without dataLimite creates single record', function () {
 });
 
 test('update modifies a ganho', function () {
-    $user = User::factory()->create();
+    $user  = User::factory()->create();
     $ganho = $user->ganhos()->create([
         'descricao' => 'Salário',
-        'fonte' => 'Trabalho',
-        'data' => '2026-01-15',
-        'valor' => 5000,
+        'fonte'     => 'Trabalho',
+        'data'      => '2026-01-15',
+        'valor'     => 5000,
     ]);
 
     $this->actingAs($user)
         ->put(route('ganhos.update', $ganho->id), [
             'descricao' => 'Salário Atualizado',
-            'fonte' => 'Trabalho',
-            'data' => '20/01/2026',
-            'valor' => 6000,
+            'fonte'     => 'Trabalho',
+            'data'      => '20/01/2026',
+            'valor'     => 6000,
         ])
         ->assertRedirect();
 
@@ -93,12 +93,12 @@ test('update modifies a ganho', function () {
 });
 
 test('destroy deletes a ganho', function () {
-    $user = User::factory()->create();
+    $user  = User::factory()->create();
     $ganho = $user->ganhos()->create([
         'descricao' => 'Salário',
-        'fonte' => 'Trabalho',
-        'data' => '2026-01-15',
-        'valor' => 5000,
+        'fonte'     => 'Trabalho',
+        'data'      => '2026-01-15',
+        'valor'     => 5000,
     ]);
 
     $this->actingAs($user)
@@ -113,17 +113,17 @@ test('user cannot access another user ganho', function () {
     $user2 = User::factory()->create();
     $ganho = $user1->ganhos()->create([
         'descricao' => 'Salário',
-        'fonte' => 'Trabalho',
-        'data' => '2026-01-15',
-        'valor' => 5000,
+        'fonte'     => 'Trabalho',
+        'data'      => '2026-01-15',
+        'valor'     => 5000,
     ]);
 
     $this->actingAs($user2)
         ->put(route('ganhos.update', $ganho->id), [
             'descricao' => 'Hack',
-            'fonte' => 'Hack',
-            'data' => '15/01/2026',
-            'valor' => 9999,
+            'fonte'     => 'Hack',
+            'data'      => '15/01/2026',
+            'valor'     => 9999,
         ])
         ->assertNotFound();
 
