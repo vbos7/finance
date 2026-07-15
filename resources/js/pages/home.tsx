@@ -11,6 +11,7 @@ import fontesRendaRoutes from "@/routes/fontes-renda";
 import categoriasRoutes from "@/routes/categorias";
 import formasPagamentoRoutes from "@/routes/formas-pagamento";
 import { IconPreview } from "@/components/icon-picker";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
@@ -124,22 +125,50 @@ const MT = ({a,o}: {a: string; o: (tab: string) => void}) => <TabsNav tabs={MONT
 
 const PAGE_SIZE = 15;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Tbl = ({cols,data,footer,onRowClick}: {cols: Column[]; data: Record<string, any>[]; footer?: FooterItem[]; onRowClick?: (row: Record<string, any>) => void}) => {
+const Tbl = ({cols,data,footer,onRowClick,onDeleteSelected}: {cols: Column[]; data: Record<string, any>[]; footer?: FooterItem[]; onRowClick?: (row: Record<string, any>) => void; onDeleteSelected?: (ids: number[]) => void}) => {
     const [page,setPage]=useState(1);
+    const [selected,setSelected]=useState<Set<number>>(new Set());
     const dataKey=data.map(r=>r.id??'').join(',');
-    useEffect(()=>setPage(1),[dataKey]);
+    useEffect(()=>{setPage(1);setSelected(new Set());},[dataKey]);
     const totalPages=Math.ceil(data.length/PAGE_SIZE);
     const rows=totalPages>1?data.slice((page-1)*PAGE_SIZE,page*PAGE_SIZE):data;
+    const selectable=!!onDeleteSelected;
+    const ids=data.map(r=>r.id as number);
+    const selCount=selected.size;
+    const allSelected=selCount>0&&selCount===ids.length;
+    const toggleRow=(id:number)=>setSelected(p=>{const n=new Set(p);if(n.has(id))n.delete(id);else n.add(id);return n;});
+    const toggleAll=()=>setSelected(allSelected?new Set():new Set(ids));
+    const nCols=cols.length+(selectable?1:0);
     return (
     <div className="rounded-xl border border-zinc-200 overflow-hidden bg-white shadow-sm">
         <div className="overflow-x-auto">
             <table className="w-full text-sm">
-                <thead><tr className="border-b border-zinc-100 bg-zinc-50/70">
-                    {cols.map(c=><th key={c.key} className={`px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider ${c.align==="right"?"text-right":""}`}>{c.label}</th>)}
-                </tr></thead>
+                <thead>{selectable&&selCount>0?(
+                    <tr className="border-b border-zinc-100 bg-zinc-50/70">
+                        <th colSpan={nCols} className="px-4 py-2 text-left">
+                            <div className="hidden md:flex items-center gap-4 h-8">
+                                <Checkbox checked={allSelected} onCheckedChange={toggleAll} aria-label="Selecionar todos"/>
+                                <span className="text-xs font-semibold text-zinc-700">{selCount} selecionado{selCount>1?"s":""}</span>
+                                {!allSelected&&<button onClick={()=>setSelected(new Set(ids))} className="text-xs font-medium text-zinc-600 hover:text-zinc-900 transition-colors">Selecionar todos ({ids.length})</button>}
+                                <button onClick={()=>onDeleteSelected?.([...selected])} className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 transition-colors">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                                    Apagar selecionados
+                                </button>
+                            </div>
+                        </th>
+                    </tr>
+                ):(
+                    <tr className="border-b border-zinc-100 bg-zinc-50/70">
+                        {selectable&&<th className="hidden md:table-cell w-10 px-4 py-3"><Checkbox checked={false} onCheckedChange={toggleAll} disabled={ids.length===0} aria-label="Selecionar todos"/></th>}
+                        {cols.map(c=><th key={c.key} className={`px-4 py-3 text-left text-xs font-medium text-zinc-500 uppercase tracking-wider ${c.align==="right"?"text-right":""}`}>{c.label}</th>)}
+                    </tr>
+                )}</thead>
                 <tbody className="divide-y divide-zinc-50">
-                {rows.length===0?<tr><td colSpan={cols.length} className="px-4 py-10 text-center text-sm text-zinc-400">Nenhum registro neste mês</td></tr>
-                    :rows.map((row,i)=><tr key={row.id||i} onClick={()=>onRowClick?.(row)} className={`hover:bg-zinc-50/60 transition-colors ${onRowClick?"cursor-pointer":""}`}>
+                {rows.length===0?<tr><td colSpan={nCols} className="px-4 py-10 text-center text-sm text-zinc-400">Nenhum registro neste mês</td></tr>
+                    :rows.map((row,i)=><tr key={row.id||i} onClick={()=>onRowClick?.(row)} className={`transition-colors ${selected.has(row.id)?"bg-zinc-50":"hover:bg-zinc-50/60"} ${onRowClick?"cursor-pointer":""}`}>
+                        {selectable&&<td className="hidden md:table-cell w-10 px-4 py-3" onClick={e=>e.stopPropagation()}>
+                            <Checkbox checked={selected.has(row.id)} onCheckedChange={()=>toggleRow(row.id)} aria-label="Selecionar linha"/>
+                        </td>}
                         {cols.map(c=><td key={c.key} className={`px-4 py-3 ${c.align==="right"?"text-right":""}`}>{c.render?c.render(row):row[c.key]}</td>)}
                     </tr>)}
                 </tbody>
@@ -249,7 +278,7 @@ export default function FinancasDashboard() {
     const [editingForma,setEditingForma]=useState<FormaPagamento|null>(null);
 
     const [loading, setLoading] = useState(false);
-    const [deleteConfirm, setDeleteConfirm] = useState<{ action: () => void } | null>(null);
+    const [deleteConfirm, setDeleteConfirm] = useState<{ action: () => void; message?: string } | null>(null);
     const [deleting, setDeleting] = useState(false);
 
     const closeAll=()=>{setModal(false);setModalGanho(false);setModalFixa(false);setModalDivida(false);setModalInvest(false);setModalMeta(false);setModalFonte(false);setModalCategoria(false);setModalForma(false);setEditingDV(null);setCopyDV(null);setEditingGanho(null);setEditingFixa(null);setEditingDivida(null);setEditingInvest(null);setEditingMeta(null);setEditingFonte(null);setEditingCategoria(null);setEditingForma(null);};
@@ -313,6 +342,24 @@ export default function FinancasDashboard() {
             action: () => {
                 setDeleting(true);
                 router.delete(url, {
+                    preserveScroll: true,
+                    preserveState: true,
+                    onSuccess: () => setDeleteConfirm(null),
+                    onFinish: () => setDeleting(false),
+                });
+            },
+        });
+    };
+
+    const bulkDelete=(url: string, ids: number[])=>{
+        setDeleteConfirm({
+            message: ids.length===1
+                ? "O registro selecionado será removido permanentemente."
+                : `Os ${ids.length} registros selecionados serão removidos permanentemente.`,
+            action: () => {
+                setDeleting(true);
+                router.delete(url, {
+                    data: { ids },
                     preserveScroll: true,
                     preserveState: true,
                     onSuccess: () => setDeleteConfirm(null),
@@ -437,7 +484,7 @@ export default function FinancasDashboard() {
                         {key:"fonte",label:"Fonte de Renda",render:r=><B>{r.fonte}</B>},
                         {key:"data",label:"Data",render:r=><span className="text-zinc-500">{r.data}</span>},
                         {key:"valor",label:"Valor",align:"right",render:r=><span className="font-mono font-semibold text-emerald-600">{fmt(r.valor)}</span>},
-                    ]} data={gF} footer={[{label:"Contagem",value:gF.length},{label:"Soma",value:fmt(gF.reduce((s,g)=>s+g.valor,0))}]} onRowClick={openEditGanho}/></div>
+                    ]} data={gF} footer={[{label:"Contagem",value:gF.length},{label:"Soma",value:fmt(gF.reduce((s,g)=>s+g.valor,0))}]} onRowClick={openEditGanho} onDeleteSelected={ids=>bulkDelete(ganhos.bulkDestroy().url,ids)}/></div>
                 </section>
 
                 {/* DESPESAS FIXAS */}
@@ -450,7 +497,7 @@ export default function FinancasDashboard() {
                         {key:"status",label:"Status",render:r=><SB s={r.status}/>},
                         {key:"dataPgto",label:"Data Pgto",render:r=><span className="text-zinc-500">{r.dataPgto}</span>},
                         {key:"forma",label:"Forma",render:r=>r.forma?<B>{r.forma}</B>:<span className="text-zinc-300">—</span>},
-                    ]} data={fF} footer={[{label:"Contagem",value:fF.length},{label:"Soma",value:fmt(fF.reduce((s,d)=>s+d.valor,0))},{label:"Concluídos",value:`${fF.length>0?Math.round((fF.filter(d=>d.status==="Pago").length/fF.length)*100):0}%`}]} onRowClick={openEditFixa}/></div>
+                    ]} data={fF} footer={[{label:"Contagem",value:fF.length},{label:"Soma",value:fmt(fF.reduce((s,d)=>s+d.valor,0))},{label:"Concluídos",value:`${fF.length>0?Math.round((fF.filter(d=>d.status==="Pago").length/fF.length)*100):0}%`}]} onRowClick={openEditFixa} onDeleteSelected={ids=>bulkDelete(despesasFixas.bulkDestroy().url,ids)}/></div>
                 </section>
 
                 {/* DESPESAS VARIÁVEIS */}
@@ -461,7 +508,7 @@ export default function FinancasDashboard() {
                         {key:"valor",label:"Valor",align:"right",render:r=><span className="font-mono">{fmt(r.valor)}</span>},
                         {key:"data",label:"Data",render:r=><span className="text-zinc-500">{r.data}</span>},
                         {key:"forma",label:"Forma de Pagamento",render:r=>r.forma?<B>{r.forma}</B>:<span className="text-zinc-300">—</span>},
-                    ]} data={vF} footer={[{label:"Contagem",value:vF.length},{label:"Soma",value:fmt(vF.reduce((s,d)=>s+d.valor,0))}]} onRowClick={openEditDV}/></div>
+                    ]} data={vF} footer={[{label:"Contagem",value:vF.length},{label:"Soma",value:fmt(vF.reduce((s,d)=>s+d.valor,0))}]} onRowClick={openEditDV} onDeleteSelected={ids=>bulkDelete(despesasVariaveis.bulkDestroy().url,ids)}/></div>
                 </section>
 
                 {/* DÍVIDAS */}
@@ -472,7 +519,7 @@ export default function FinancasDashboard() {
                         {key:"valor",label:"Valor",align:"right",render:r=><span className="font-mono">{fmt(r.valor)}</span>},
                         {key:"vencimento",label:"Vencimento",render:r=><span className="text-zinc-500">{r.vencimento}</span>},
                         {key:"status",label:"Status",render:r=><SB s={r.status}/>},
-                    ]} data={dF} footer={[{label:"Contagem",value:dF.length},{label:"Soma",value:fmt(dF.reduce((s,d)=>s+d.valor,0))},{label:"Concluídos",value:`${dF.length>0?Math.round((dF.filter(d=>d.status==="Pago").length/dF.length)*100):0}%`}]} onRowClick={openEditDivida}/></div>
+                    ]} data={dF} footer={[{label:"Contagem",value:dF.length},{label:"Soma",value:fmt(dF.reduce((s,d)=>s+d.valor,0))},{label:"Concluídos",value:`${dF.length>0?Math.round((dF.filter(d=>d.status==="Pago").length/dF.length)*100):0}%`}]} onRowClick={openEditDivida} onDeleteSelected={ids=>bulkDelete(dividas.bulkDestroy().url,ids)}/></div>
                 </section>
 
                 {/* INVESTIMENTOS */}
@@ -486,7 +533,7 @@ export default function FinancasDashboard() {
                         {key:"tipoAtivo",label:"Tipo",render:r=><B v={r.tipoAtivo.includes("Fundo")?"warning":"success"}>{r.tipoAtivo}</B>},
                         {key:"provento",label:"Provento",align:"right",render:r=><span className="font-mono text-emerald-600">{fmt(r.provento)}</span>},
                         {key:"frequencia",label:"Frequência",render:r=><B>{r.frequencia}</B>},
-                    ]} data={iF} footer={[{label:"Contagem",value:iF.length},{label:"Média",value:fmt(iF.length>0?iF.reduce((s,x)=>s+x.valor,0)/iF.length:0)},{label:"Soma Total",value:fmt(iF.reduce((s,x)=>s+x.valorTotal,0))}]} onRowClick={openEditInvest}/></div>
+                    ]} data={iF} footer={[{label:"Contagem",value:iF.length},{label:"Média",value:fmt(iF.length>0?iF.reduce((s,x)=>s+x.valor,0)/iF.length:0)},{label:"Soma Total",value:fmt(iF.reduce((s,x)=>s+x.valorTotal,0))}]} onRowClick={openEditInvest} onDeleteSelected={ids=>bulkDelete(investimentos.bulkDestroy().url,ids)}/></div>
                 </section>
 
                 {/* METAS FINANCEIRAS */}
@@ -600,7 +647,7 @@ export default function FinancasDashboard() {
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !deleting && setDeleteConfirm(null)} />
                     <div className="relative bg-white rounded-xl shadow-2xl border border-zinc-200 w-full max-w-sm mx-4 p-6" style={{ animation: "si .2s ease" }}>
                         <h3 className="text-base font-semibold text-zinc-900">Excluir registro?</h3>
-                        <p className="text-sm text-zinc-500 mt-2">Essa ação não pode ser desfeita. O registro será removido permanentemente.</p>
+                        <p className="text-sm text-zinc-500 mt-2">Essa ação não pode ser desfeita. {deleteConfirm.message ?? "O registro será removido permanentemente."}</p>
                         <div className="flex justify-end gap-3 mt-6">
                             <button onClick={() => setDeleteConfirm(null)} disabled={deleting} className="h-9 px-4 rounded-md border border-zinc-200 text-sm font-medium text-zinc-700 hover:bg-zinc-50 transition-colors disabled:opacity-50">
                                 Cancelar

@@ -73,4 +73,16 @@ class DividaController extends Controller
 
         return back();
     }
+
+    public function destroyMany(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            "ids"   => "required|array|min:1",
+            "ids.*" => "integer",
+        ]);
+
+        $request->user()->dividas()->whereIn("id", $data["ids"])->delete();
+
+        return back();
+    }
 }

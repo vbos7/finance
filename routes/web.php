@@ -10,6 +10,13 @@ Route::get('/teste', function () {
 })->name('teste');
 
 Route::middleware('auth')->group(function () {
+    // Bulk delete: declaradas antes dos resources para "bulk" não casar com {id}
+    Route::delete('ganhos/bulk', [GanhoController::class, 'destroyMany'])->name('ganhos.bulk-destroy');
+    Route::delete('despesas-fixas/bulk', [DespesaFixaController::class, 'destroyMany'])->name('despesas-fixas.bulk-destroy');
+    Route::delete('despesas-variaveis/bulk', [DespesaVariavelController::class, 'destroyMany'])->name('despesas-variaveis.bulk-destroy');
+    Route::delete('dividas/bulk', [DividaController::class, 'destroyMany'])->name('dividas.bulk-destroy');
+    Route::delete('investimentos/bulk', [InvestimentoController::class, 'destroyMany'])->name('investimentos.bulk-destroy');
+
     Route::resource('ganhos', GanhoController::class)->only(['store', 'update', 'destroy']);
     Route::resource('despesas-fixas', DespesaFixaController::class)->only(['store', 'update', 'destroy']);
     Route::resource('despesas-variaveis', DespesaVariavelController::class)->only(['store', 'update', 'destroy']);
