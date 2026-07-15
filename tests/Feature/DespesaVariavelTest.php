@@ -198,3 +198,19 @@ test('store rejects dataLimite beyond 60 months', function () {
 
     expect($user->despesasVariaveis()->count())->toBe(0);
 });
+
+test('bulk destroy deletes selected despesas variaveis and ignores other users records', function () {
+    $user   = User::factory()->create();
+    $other  = User::factory()->create();
+    $d1     = $user->despesasVariaveis()->create(['descricao' => 'D1', 'categoria' => 'Mercado', 'valor' => 100, 'data' => '2026-01-05', 'balanco' => '2026-01-01']);
+    $d2     = $user->despesasVariaveis()->create(['descricao' => 'D2', 'categoria' => 'Mercado', 'valor' => 200, 'data' => '2026-01-06', 'balanco' => '2026-01-01']);
+    $alheio = $other->despesasVariaveis()->create(['descricao' => 'Alheio', 'categoria' => 'Mercado', 'valor' => 300, 'data' => '2026-01-07', 'balanco' => '2026-01-01']);
+
+    $this->actingAs($user)
+        ->delete(route('despesas-variaveis.bulk-destroy'), ['ids' => [$d1->id, $d2->id, $alheio->id]])
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('despesas_variaveis', ['id' => $d1->id]);
+    $this->assertDatabaseMissing('despesas_variaveis', ['id' => $d2->id]);
+    $this->assertDatabaseHas('despesas_variaveis', ['id' => $alheio->id]);
+});

@@ -130,3 +130,19 @@ test('store validates required fields', function () {
         ->post(route('dividas.store'), [])
         ->assertSessionHasErrors(['descricao', 'destino', 'valor', 'vencimento', 'status']);
 });
+
+test('bulk destroy deletes selected dividas and ignores other users records', function () {
+    $user   = User::factory()->create();
+    $other  = User::factory()->create();
+    $d1     = $user->dividas()->create(['descricao' => 'D1', 'destino' => 'Banco', 'valor' => 100, 'vencimento' => '2026-01-05', 'status' => 'Pendente']);
+    $d2     = $user->dividas()->create(['descricao' => 'D2', 'destino' => 'Banco', 'valor' => 200, 'vencimento' => '2026-01-06', 'status' => 'Pendente']);
+    $alheio = $other->dividas()->create(['descricao' => 'Alheio', 'destino' => 'Banco', 'valor' => 300, 'vencimento' => '2026-01-07', 'status' => 'Pendente']);
+
+    $this->actingAs($user)
+        ->delete(route('dividas.bulk-destroy'), ['ids' => [$d1->id, $d2->id, $alheio->id]])
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('dividas', ['id' => $d1->id]);
+    $this->assertDatabaseMissing('dividas', ['id' => $d2->id]);
+    $this->assertDatabaseHas('dividas', ['id' => $alheio->id]);
+});

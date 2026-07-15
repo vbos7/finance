@@ -153,3 +153,20 @@ test('store validates required fields', function () {
         ->post(route('investimentos.store'), [])
         ->assertSessionHasErrors(['produto', 'empresa', 'valor', 'quantidade', 'tipoAtivo', 'frequencia', 'data']);
 });
+
+test('bulk destroy deletes selected investimentos and ignores other users records', function () {
+    $user   = User::factory()->create();
+    $other  = User::factory()->create();
+    $base   = ['empresa' => 'Empresa', 'valor' => 100, 'quantidade' => 1, 'tipo_ativo' => 'Ação', 'provento' => 0, 'frequencia' => 'Mensal', 'data' => '2026-01-05'];
+    $i1     = $user->investimentos()->create(['produto' => 'I1'] + $base);
+    $i2     = $user->investimentos()->create(['produto' => 'I2'] + $base);
+    $alheio = $other->investimentos()->create(['produto' => 'Alheio'] + $base);
+
+    $this->actingAs($user)
+        ->delete(route('investimentos.bulk-destroy'), ['ids' => [$i1->id, $i2->id, $alheio->id]])
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('investimentos', ['id' => $i1->id]);
+    $this->assertDatabaseMissing('investimentos', ['id' => $i2->id]);
+    $this->assertDatabaseHas('investimentos', ['id' => $alheio->id]);
+});

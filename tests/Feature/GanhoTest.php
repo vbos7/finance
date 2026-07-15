@@ -139,3 +139,28 @@ test('store validates required fields', function () {
         ->post(route('ganhos.store'), [])
         ->assertSessionHasErrors(['descricao', 'fonte', 'data', 'valor']);
 });
+
+test('bulk destroy deletes selected ganhos and ignores other users records', function () {
+    $user   = User::factory()->create();
+    $other  = User::factory()->create();
+    $g1     = $user->ganhos()->create(['descricao' => 'G1', 'fonte' => 'Salário', 'data' => '2026-01-05', 'valor' => 100]);
+    $g2     = $user->ganhos()->create(['descricao' => 'G2', 'fonte' => 'Salário', 'data' => '2026-01-06', 'valor' => 200]);
+    $alheio = $other->ganhos()->create(['descricao' => 'Alheio', 'fonte' => 'Salário', 'data' => '2026-01-07', 'valor' => 300]);
+
+    $this->actingAs($user)
+        ->delete(route('ganhos.bulk-destroy'), ['ids' => [$g1->id, $g2->id, $alheio->id]])
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('ganhos', ['id' => $g1->id]);
+    $this->assertDatabaseMissing('ganhos', ['id' => $g2->id]);
+    $this->assertDatabaseHas('ganhos', ['id' => $alheio->id]);
+});
+
+test('bulk destroy requires ids and blocks guests', function () {
+    $this->delete(route('ganhos.bulk-destroy'))->assertRedirect(route('login'));
+
+    $user = User::factory()->create();
+    $this->actingAs($user)
+        ->delete(route('ganhos.bulk-destroy'), [])
+        ->assertSessionHasErrors(['ids']);
+});

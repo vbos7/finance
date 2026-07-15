@@ -175,3 +175,19 @@ test('store rejects malformed dates', function () {
         ])
         ->assertSessionHasErrors(['vencimento', 'dataPgto']);
 });
+
+test('bulk destroy deletes selected despesas fixas and ignores other users records', function () {
+    $user   = User::factory()->create();
+    $other  = User::factory()->create();
+    $d1     = $user->despesasFixas()->create(['descricao' => 'D1', 'categoria' => 'Casa', 'valor' => 100, 'vencimento' => '2026-01-05', 'status' => 'Pendente']);
+    $d2     = $user->despesasFixas()->create(['descricao' => 'D2', 'categoria' => 'Casa', 'valor' => 200, 'vencimento' => '2026-01-06', 'status' => 'Pendente']);
+    $alheio = $other->despesasFixas()->create(['descricao' => 'Alheio', 'categoria' => 'Casa', 'valor' => 300, 'vencimento' => '2026-01-07', 'status' => 'Pendente']);
+
+    $this->actingAs($user)
+        ->delete(route('despesas-fixas.bulk-destroy'), ['ids' => [$d1->id, $d2->id, $alheio->id]])
+        ->assertRedirect();
+
+    $this->assertDatabaseMissing('despesas_fixas', ['id' => $d1->id]);
+    $this->assertDatabaseMissing('despesas_fixas', ['id' => $d2->id]);
+    $this->assertDatabaseHas('despesas_fixas', ['id' => $alheio->id]);
+});
