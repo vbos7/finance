@@ -26,6 +26,16 @@ test('authenticated users see the home page with their data', function () {
         'data'      => '2026-01-10',
         'balanco'   => '2026-01-01',
     ]);
+    $user->investimentos()->create([
+        'produto'    => 'PETR4',
+        'empresa'    => 'Petrobras',
+        'valor'      => 30,
+        'quantidade' => 10,
+        'tipo_ativo' => 'Ação',
+        'provento'   => 0,
+        'frequencia' => 'Trimestral',
+        'data'       => '2026-01-15',
+    ]);
 
     $this->actingAs($user)
         ->get(route('home', ['ano' => 2026]))
@@ -37,7 +47,9 @@ test('authenticated users see the home page with their data', function () {
             ->where('ganhos.0.descricao', 'Salário Janeiro')
             ->has('variaveis', 1)
             ->where('balancoMensal.0.receita', 5000)
-            ->where('balancoMensal.0.despesa', 350));
+            ->where('balancoMensal.0.investimento', 300)
+            ->where('balancoMensal.0.despesa', 350)
+            ->where('balancoMensal.1.investimento', 0));
 });
 
 test('home does not expose another user data', function () {

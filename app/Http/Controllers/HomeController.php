@@ -61,14 +61,22 @@ class HomeController extends Controller
         ];
 
         // Balanço mensal
-        $balancoMensal = collect($meses)->map(function ($mes, $i) use ($ganhos, $fixas, $variaveis, $dividas) {
+        $balancoMensal = collect($meses)->map(function ($mes, $i) use ($ganhos, $fixas, $variaveis, $dividas, $investimentos) {
             $month   = $i + 1;
             $receita = $ganhos->filter(fn ($g) => $g->data->month === $month)->sum('valor');
             $despesa = $fixas->filter(fn ($d) => ($d->data_pgto ?? $d->vencimento)->month === $month)->sum('valor')
                      + $variaveis->filter(fn ($d) => $d->balanco->month === $month)->sum('valor')
                      + $dividas->filter(fn ($d) => $d->vencimento->month === $month)->sum('valor');
+            // Investimentos saem da receita do mês (valor unitário × quantidade)
+            $investimento = $investimentos->filter(fn ($inv) => $inv->data->month === $month)
+                ->sum(fn ($inv) => (float) $inv->valor * $inv->quantidade);
 
-            return ['mes' => $mes, 'receita' => round($receita, 2), 'despesa' => round($despesa, 2)];
+            return [
+                'mes'          => $mes,
+                'receita'      => round($receita, 2),
+                'investimento' => round($investimento, 2),
+                'despesa'      => round($despesa, 2),
+            ];
         })->values();
 
         // Fontes de renda (agrupa ganhos por fonte + config)

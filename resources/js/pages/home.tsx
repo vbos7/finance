@@ -26,7 +26,7 @@ import ConfigModal, { type ConfigFormData } from "@/components/config-modal";
 
 /* ── TYPES ─────────────────────────────────────────────────────────────────── */
 
-interface BalancoMensal { mes: string; receita: number; despesa: number }
+interface BalancoMensal { mes: string; receita: number; investimento: number; despesa: number }
 interface Ganho { id: number; descricao: string; fonte: string; data: string; valor: number; balanco: string ; grupoId: string | null; grupoTotal: number }
 interface DespesaFixa { id: number; descricao: string; categoria: string; valor: number; vencimento: string; status: string; dataPgto: string; forma: string; balanco: string ; grupoId: string | null; grupoTotal: number }
 interface DespesaVariavel { id: number; descricao: string; categoria: string; valor: number; data: string; balanco: string; forma: string ; grupoId: string | null; grupoTotal: number }
@@ -462,8 +462,9 @@ export default function FinancasDashboard() {
     const dFD:FilterDef[]=[{key:"destino",label:"Destino",options:unique(dMonth,"destino")},{key:"status",label:"Status",options:unique(dMonth,"status")}];
     const iFD:FilterDef[]=[{key:"tipoAtivo",label:"Tipo de Ativo",options:unique(iMonth,"tipoAtivo")},{key:"frequencia",label:"Frequência",options:unique(iMonth,"frequencia")}];
     const tR=balancoMensal.reduce((s,m)=>s+m.receita,0);
+    const tI=balancoMensal.reduce((s,m)=>s+m.investimento,0);
     const tD=balancoMensal.reduce((s,m)=>s+m.despesa,0);
-    const tB=tR-tD;
+    const tB=tR-tI-tD;
 
     return (
         <div className="min-h-screen bg-zinc-50/50" style={{fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif"}}>
@@ -478,6 +479,7 @@ export default function FinancasDashboard() {
                     <div className="flex items-center gap-5">
                         <div className="hidden md:flex items-center gap-5">
                             <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Receita</p><p className="text-sm font-bold text-emerald-600">{fmt(tR)}</p></div>
+                            <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Investido</p><p className="text-sm font-bold text-sky-600">{fmt(tI)}</p></div>
                             <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Despesa</p><p className="text-sm font-bold text-red-500">{fmt(tD)}</p></div>
                             <div className="h-8 w-px bg-zinc-200"/>
                             <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Balanço</p><p className={`text-sm font-bold ${tB>=0?"text-emerald-600":"text-red-600"}`}>{fmt(tB)}</p></div>
@@ -508,11 +510,12 @@ export default function FinancasDashboard() {
                 {/* BALANÇO MENSAL */}
                 <section><SH title="Balanço Mensal"/><TabsNav tabs={qTabs} active={qTab} onChange={setQTab}/>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                        {vis.map(m=>{const p=Math.round((m.despesa/m.receita)*100)||0,b=m.receita-m.despesa;return(
+                        {vis.map(m=>{const p=Math.round(((m.despesa+m.investimento)/m.receita)*100)||0,b=m.receita-m.investimento-m.despesa;return(
                             <div key={m.mes} className="rounded-xl border border-zinc-200 bg-white p-5 hover:shadow-md hover:border-zinc-300 transition-all">
                                 <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-zinc-900">{m.mes}</h3><span className={`text-xs font-mono font-semibold px-2 py-0.5 rounded-md ${p>90?"bg-red-50 text-red-600":"bg-zinc-100 text-zinc-600"}`}>{p}%</span></div>
                                 <div className="space-y-1.5 mb-4">
                                     <div className="flex justify-between text-sm"><span className="text-emerald-600 font-medium">Receita</span><span className="text-zinc-700 font-mono">{fmt(m.receita)}</span></div>
+                                    <div className="flex justify-between text-sm"><span className="text-sky-600 font-medium">Investimento</span><span className="text-zinc-700 font-mono">{fmt(m.investimento)}</span></div>
                                     <div className="flex justify-between text-sm"><span className="text-red-500 font-medium">Despesa</span><span className="text-zinc-700 font-mono">{fmt(m.despesa)}</span></div>
                                 </div>
                                 <LP p={p}/>
