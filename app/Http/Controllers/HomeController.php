@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
+use Carbon\{Carbon, CarbonInterface};
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Http\Request;
@@ -27,6 +27,40 @@ class HomeController extends Controller
             ->groupBy('grupo_id')
             ->pluck('total', 'grupo_id')
             ->map(fn ($total) => (int) $total);
+    }
+
+    /**
+     * Datas de cada grupo de lançamentos vinculados (todos os anos), usadas para
+     * contar quantos registros ainda vêm a partir de um lançamento.
+     *
+     * @template TModel of Model
+     *
+     * @param  HasMany<TModel, \App\Models\User>  $relation
+     * @return Collection<string, Collection<int, string>>
+     */
+    private function datasPorGrupo(HasMany $relation, string $coluna): Collection
+    {
+        return $relation->whereNotNull('grupo_id')
+            ->get(['grupo_id', $coluna])
+            ->groupBy('grupo_id')
+            ->map(fn ($itens) => $itens->map(fn ($i) => $i->getAttribute($coluna)->toDateString())->values());
+    }
+
+    /**
+     * Quantos lançamentos do grupo têm data igual ou posterior à informada —
+     * é o que a exclusão "deste e dos próximos" vai remover.
+     *
+     * @param  Collection<string, Collection<int, string>>  $datas
+     */
+    private function restantesNoGrupo(Collection $datas, ?string $grupoId, ?CarbonInterface $data): int
+    {
+        if ($grupoId === null || $data === null || !$datas->has($grupoId)) {
+            return 1;
+        }
+
+        $ref = $data->toDateString();
+
+        return $datas[$grupoId]->filter(fn ($d) => $d >= $ref)->count();
     }
 
     public function index(Request $request): Response
@@ -126,68 +160,79 @@ class HomeController extends Controller
         $totDividas   = $this->totaisPorGrupo($user->dividas());
         $totInvest    = $this->totaisPorGrupo($user->investimentos());
 
+        $datGanhos    = $this->datasPorGrupo($user->ganhos(), 'data');
+        $datFixas     = $this->datasPorGrupo($user->despesasFixas(), 'vencimento');
+        $datVariaveis = $this->datasPorGrupo($user->despesasVariaveis(), 'balanco');
+        $datDividas   = $this->datasPorGrupo($user->dividas(), 'vencimento');
+        $datInvest    = $this->datasPorGrupo($user->investimentos(), 'data');
+
         return Inertia::render('home', [
             'ano'           => $ano,
             'balancoMensal' => $balancoMensal,
             'ganhos'        => $ganhos->map(fn ($g) => [
-                'id'         => $g->id,
-                'descricao'  => $g->descricao,
-                'fonte'      => $g->fonte,
-                'data'       => $fmtDate($g->data),
-                'valor'      => (float) $g->valor,
-                'balanco'    => $meses[$g->data->month - 1],
-                'grupoId'    => $g->grupo_id,
-                'grupoTotal' => $totGanhos[$g->grupo_id] ?? 1,
+                'id'             => $g->id,
+                'descricao'      => $g->descricao,
+                'fonte'          => $g->fonte,
+                'data'           => $fmtDate($g->data),
+                'valor'          => (float) $g->valor,
+                'balanco'        => $meses[$g->data->month - 1],
+                'grupoId'        => $g->grupo_id,
+                'grupoTotal'     => $totGanhos[$g->grupo_id] ?? 1,
+                'grupoRestantes' => $this->restantesNoGrupo($datGanhos, $g->grupo_id, $g->data),
             ])->values(),
             'fixas' => $fixas->map(fn ($d) => [
-                'id'         => $d->id,
-                'descricao'  => $d->descricao,
-                'categoria'  => $d->categoria,
-                'valor'      => (float) $d->valor,
-                'vencimento' => $fmtDate($d->vencimento),
-                'status'     => $d->status,
-                'dataPgto'   => $fmtDate($d->data_pgto),
-                'forma'      => $d->forma ?? '',
-                'balanco'    => $meses[($d->data_pgto ?? $d->vencimento)->month - 1],
-                'grupoId'    => $d->grupo_id,
-                'grupoTotal' => $totFixas[$d->grupo_id] ?? 1,
+                'id'             => $d->id,
+                'descricao'      => $d->descricao,
+                'categoria'      => $d->categoria,
+                'valor'          => (float) $d->valor,
+                'vencimento'     => $fmtDate($d->vencimento),
+                'status'         => $d->status,
+                'dataPgto'       => $fmtDate($d->data_pgto),
+                'forma'          => $d->forma ?? '',
+                'balanco'        => $meses[($d->data_pgto ?? $d->vencimento)->month - 1],
+                'grupoId'        => $d->grupo_id,
+                'grupoTotal'     => $totFixas[$d->grupo_id] ?? 1,
+                'grupoRestantes' => $this->restantesNoGrupo($datFixas, $d->grupo_id, $d->vencimento),
             ])->values(),
             'variaveis' => $variaveis->map(fn ($d) => [
-                'id'         => $d->id,
-                'descricao'  => $d->descricao,
-                'categoria'  => $d->categoria,
-                'valor'      => (float) $d->valor,
-                'data'       => $fmtDate($d->data),
-                'forma'      => $d->forma ?? '',
-                'balanco'    => $d->balanco->format('m/Y'),
-                'grupoId'    => $d->grupo_id,
-                'grupoTotal' => $totVariaveis[$d->grupo_id] ?? 1,
+                'id'             => $d->id,
+                'descricao'      => $d->descricao,
+                'categoria'      => $d->categoria,
+                'valor'          => (float) $d->valor,
+                'data'           => $fmtDate($d->data),
+                'forma'          => $d->forma ?? '',
+                'balanco'        => $d->balanco->format('m/Y'),
+                'grupoId'        => $d->grupo_id,
+                'grupoTotal'     => $totVariaveis[$d->grupo_id] ?? 1,
+                'grupoRestantes' => $this->restantesNoGrupo($datVariaveis, $d->grupo_id, $d->balanco),
             ])->values(),
             'dividas' => $dividas->map(fn ($d) => [
-                'id'         => $d->id,
-                'descricao'  => $d->descricao,
-                'destino'    => $d->destino,
-                'valor'      => (float) $d->valor,
-                'vencimento' => $fmtDate($d->vencimento),
-                'status'     => $d->status,
-                'balanco'    => $meses[$d->vencimento->month - 1],
-                'grupoId'    => $d->grupo_id,
-                'grupoTotal' => $totDividas[$d->grupo_id] ?? 1,
+                'id'             => $d->id,
+                'descricao'      => $d->descricao,
+                'destino'        => $d->destino,
+                'valor'          => (float) $d->valor,
+                'vencimento'     => $fmtDate($d->vencimento),
+                'status'         => $d->status,
+                'balanco'        => $meses[$d->vencimento->month - 1],
+                'grupoId'        => $d->grupo_id,
+                'grupoTotal'     => $totDividas[$d->grupo_id] ?? 1,
+                'grupoRestantes' => $this->restantesNoGrupo($datDividas, $d->grupo_id, $d->vencimento),
             ])->values(),
             'investimentos' => $investimentos->map(fn ($inv) => [
-                'id'         => $inv->id,
-                'produto'    => $inv->produto,
-                'empresa'    => $inv->empresa,
-                'valor'      => (float) $inv->valor,
-                'quantidade' => $inv->quantidade,
-                'valorTotal' => round((float) $inv->valor * $inv->quantidade, 2),
-                'tipoAtivo'  => $inv->tipo_ativo,
-                'provento'   => (float) $inv->provento,
-                'frequencia' => $inv->frequencia,
-                'data'       => $fmtDate($inv->data),
-                'balanco'    => $meses[$inv->data->month - 1],
-                'grupoId'    => $inv->grupo_id,
-                'grupoTotal' => $totInvest[$inv->grupo_id] ?? 1,
+                'id'             => $inv->id,
+                'produto'        => $inv->produto,
+                'empresa'        => $inv->empresa,
+                'valor'          => (float) $inv->valor,
+                'quantidade'     => $inv->quantidade,
+                'valorTotal'     => round((float) $inv->valor * $inv->quantidade, 2),
+                'tipoAtivo'      => $inv->tipo_ativo,
+                'provento'       => (float) $inv->provento,
+                'frequencia'     => $inv->frequencia,
+                'data'           => $fmtDate($inv->data),
+                'balanco'        => $meses[$inv->data->month - 1],
+                'grupoId'        => $inv->grupo_id,
+                'grupoTotal'     => $totInvest[$inv->grupo_id] ?? 1,
+                'grupoRestantes' => $this->restantesNoGrupo($datInvest, $inv->grupo_id, $inv->data),
             ])->values(),
             'metas' => $metas->map(function ($m) use ($investimentos) {
                 $investido = round($investimentos

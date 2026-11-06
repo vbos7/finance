@@ -66,6 +66,32 @@ class InvestimentoController extends Controller
 
     public function update(Request $request, int $id): RedirectResponse
     {
+        $camposDeGrupo = ['produto', 'empresa', 'valor', 'quantidade', 'tipo_ativo', 'provento', 'frequencia'];
+
+        // Edição pela aba "Meta Financeira": o registro vira (ou continua) um aporte na meta
+        if ($request->filled('metaId')) {
+            $data = $request->validate([
+                'metaId' => 'required|integer',
+                'valor'  => 'required|numeric|min:0.01',
+                'data'   => 'required|string|date_format:d/m/Y',
+            ]);
+
+            $meta = $request->user()->metas()->findOrFail($data['metaId']);
+
+            $this->updateWithScope($request, $request->user()->investimentos(), $id, [
+                'produto'    => $meta->nome,
+                'empresa'    => '',
+                'valor'      => $data['valor'],
+                'quantidade' => 1,
+                'tipo_ativo' => 'Meta Financeira',
+                'provento'   => 0,
+                'frequencia' => '',
+                'data'       => Carbon::createFromFormat('d/m/Y', $data['data'])->toDateString(),
+            ], $camposDeGrupo);
+
+            return back();
+        }
+
         $data = $request->validate([
             'produto'    => 'required|string|max:255',
             'empresa'    => 'required|string|max:255',
@@ -86,14 +112,14 @@ class InvestimentoController extends Controller
             'provento'   => $data['provento'] ?? 0,
             'frequencia' => $data['frequencia'],
             'data'       => Carbon::createFromFormat('d/m/Y', $data['data'])->toDateString(),
-        ], ['produto', 'empresa', 'valor', 'quantidade', 'tipo_ativo', 'provento', 'frequencia']);
+        ], $camposDeGrupo);
 
         return back();
     }
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $this->destroyWithScope($request, $request->user()->investimentos(), $id);
+        $this->destroyWithScope($request, $request->user()->investimentos(), $id, 'data');
 
         return back();
     }

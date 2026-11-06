@@ -365,3 +365,62 @@ test('update em grupo de despesa fixa preserva vencimento e pagamento individuai
     expect($despesas[1]->data_pgto->format('Y-m-d'))->toBe('2026-02-14');
     expect($despesas[2]->vencimento->format('Y-m-d'))->toBe('2026-03-15');
 });
+
+test('escopo grupo remove apenas o registro e os vinculados posteriores', function () {
+    $user  = User::factory()->create();
+    $grupo = (string) Str::uuid();
+    $jan   = $user->ganhos()->create(['descricao' => 'Salário', 'fonte' => 'Salário', 'data' => '2026-01-05', 'valor' => 100, 'grupo_id' => $grupo]);
+    $fev   = $user->ganhos()->create(['descricao' => 'Salário', 'fonte' => 'Salário', 'data' => '2026-02-05', 'valor' => 100, 'grupo_id' => $grupo]);
+    $user->ganhos()->create(['descricao' => 'Salário', 'fonte' => 'Salário', 'data' => '2026-03-05', 'valor' => 100, 'grupo_id' => $grupo]);
+    $user->ganhos()->create(['descricao' => 'Salário', 'fonte' => 'Salário', 'data' => '2026-04-05', 'valor' => 100, 'grupo_id' => $grupo]);
+
+    $this->actingAs($user)
+        ->delete(route('ganhos.destroy', $fev->id), ['escopo' => 'grupo'])
+        ->assertRedirect();
+
+    // Janeiro é anterior ao registro excluído e fica preservado
+    expect($user->ganhos()->pluck('id')->all())->toBe([$jan->id]);
+});
+
+test('escopo grupo em despesa variavel usa o mes de balanco como referencia', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->post(route('despesas-variaveis.store'), [
+        'descricao' => 'Notebook',
+        'categoria' => 'Shopping',
+        'valor'     => 3000,
+        'data'      => '15/01/2026',
+        'forma'     => 'Cartão de Crédito',
+        'balanco'   => '01/2026',
+        'parcelas'  => 3,
+    ]);
+
+    $segunda = $user->despesasVariaveis()->orderBy('balanco')->skip(1)->first();
+
+    $this->actingAs($user)
+        ->delete(route('despesas-variaveis.destroy', $segunda->id), ['escopo' => 'grupo'])
+        ->assertRedirect();
+
+    expect($user->despesasVariaveis()->pluck('descricao')->all())->toBe(['Notebook 1/3']);
+});
+
+test('home expoe grupoRestantes contando o registro e os posteriores', function () {
+    $user = User::factory()->create();
+
+    $this->actingAs($user)->post(route('ganhos.store'), [
+        'descricao'  => 'Salário',
+        'fonte'      => 'Salário',
+        'data'       => '05/11/2026',
+        'valor'      => 5000,
+        'dataLimite' => '01/2027',
+    ]);
+    $user->ganhos()->create(['descricao' => 'Bônus', 'fonte' => 'Salário', 'data' => '2026-12-20', 'valor' => 500]);
+
+    $this->actingAs($user)
+        ->get(route('home', ['ano' => 2026]))
+        ->assertInertia(fn ($page) => $page
+            ->where('ganhos.0.grupoRestantes', 3)
+            ->where('ganhos.1.grupoRestantes', 2)
+            ->where('ganhos.2.descricao', 'Bônus')
+            ->where('ganhos.2.grupoRestantes', 1));
+});

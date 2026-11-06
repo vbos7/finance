@@ -70,7 +70,7 @@ class GanhoController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $this->destroyWithScope($request, $request->user()->ganhos(), $id);
+        $this->destroyWithScope($request, $request->user()->ganhos(), $id, 'data');
 
         return back();
     }

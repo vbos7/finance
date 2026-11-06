@@ -103,7 +103,7 @@ class DespesaVariavelController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $this->destroyWithScope($request, $request->user()->despesasVariaveis(), $id);
+        $this->destroyWithScope($request, $request->user()->despesasVariaveis(), $id, 'balanco');
 
         return back();
     }

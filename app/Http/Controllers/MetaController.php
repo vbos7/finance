@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Carbon\Carbon;
 use Illuminate\Http\{RedirectResponse, Request};
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -87,7 +88,18 @@ class MetaController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $request->user()->metas()->findOrFail($id)->delete();
+        $meta = $request->user()->metas()->findOrFail($id);
+
+        // O que já foi aportado na meta continua sendo patrimônio: os aportes
+        // viram investimentos comuns (tipo "Outros") em vez de sumirem junto
+        DB::transaction(function () use ($request, $meta) {
+            $request->user()->investimentos()
+                ->where('tipo_ativo', 'Meta Financeira')
+                ->where('produto', $meta->nome)
+                ->update(['tipo_ativo' => 'Outros']);
+
+            $meta->delete();
+        });
 
         return back();
     }
