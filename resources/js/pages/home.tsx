@@ -26,7 +26,7 @@ import ConfigModal, { type ConfigFormData } from "@/components/config-modal";
 
 /* ── TYPES ─────────────────────────────────────────────────────────────────── */
 
-interface BalancoMensal { mes: string; receita: number; despesa: number }
+interface BalancoMensal { mes: string; receita: number; investimento: number; despesa: number }
 interface Ganho { id: number; descricao: string; fonte: string; data: string; valor: number; balanco: string ; grupoId: string | null; grupoTotal: number }
 interface DespesaFixa { id: number; descricao: string; categoria: string; valor: number; vencimento: string; status: string; dataPgto: string; forma: string; balanco: string ; grupoId: string | null; grupoTotal: number }
 interface DespesaVariavel { id: number; descricao: string; categoria: string; valor: number; data: string; balanco: string; forma: string ; grupoId: string | null; grupoTotal: number }
@@ -288,6 +288,7 @@ export default function FinancasDashboard() {
     const [copyDV,setCopyDV]=useState<DespesaFormData|null>(null);
     const [editingGanho,setEditingGanho]=useState<Ganho|null>(null);
     const [editingFixa,setEditingFixa]=useState<DespesaFixa|null>(null);
+    const [copyFixa,setCopyFixa]=useState<DespesaFixaFormData|null>(null);
     const [editingDivida,setEditingDivida]=useState<Divida|null>(null);
     const [editingInvest,setEditingInvest]=useState<Investimento|null>(null);
     const [modalMeta,setModalMeta]=useState(false);
@@ -305,7 +306,7 @@ export default function FinancasDashboard() {
     const [updateConfirm, setUpdateConfirm] = useState<{ action: (escopo: EscopoExclusao) => void; grupoTotal: number } | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    const closeAll=()=>{setModal(false);setModalGanho(false);setModalFixa(false);setModalDivida(false);setModalInvest(false);setModalMeta(false);setModalFonte(false);setModalCategoria(false);setModalForma(false);setEditingDV(null);setCopyDV(null);setEditingGanho(null);setEditingFixa(null);setEditingDivida(null);setEditingInvest(null);setEditingMeta(null);setEditingFonte(null);setEditingCategoria(null);setEditingForma(null);setUpdateConfirm(null);};
+    const closeAll=()=>{setModal(false);setModalGanho(false);setModalFixa(false);setModalDivida(false);setModalInvest(false);setModalMeta(false);setModalFonte(false);setModalCategoria(false);setModalForma(false);setEditingDV(null);setCopyDV(null);setEditingGanho(null);setEditingFixa(null);setCopyFixa(null);setEditingDivida(null);setEditingInvest(null);setEditingMeta(null);setEditingFonte(null);setEditingCategoria(null);setEditingForma(null);setUpdateConfirm(null);};
 
     const rOpts = { preserveScroll: true, preserveState: true, onSuccess: closeAll, onFinish: () => setLoading(false) };
 
@@ -418,7 +419,14 @@ export default function FinancasDashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const openEditGanho=(row: Record<string,any>)=>{const r=row as Ganho;setEditingGanho(r);setModalGanho(true);};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const openEditFixa=(row: Record<string,any>)=>{const r=row as DespesaFixa;setEditingFixa(r);setModalFixa(true);};
+    const openEditFixa=(row: Record<string,any>)=>{const r=row as DespesaFixa;setCopyFixa(null);setEditingFixa(r);setModalFixa(true);};
+    const fixaToForm=(d: DespesaFixa): DespesaFixaFormData=>({descricao:d.descricao,categoria:d.categoria,valor:String(d.valor),vencimento:d.vencimento,status:d.status,dataPgto:d.dataPgto,forma:d.forma,dataLimite:""});
+    // Fecha o modal de edição e reabre como "nova despesa fixa" pré-preenchida com os dados da atual
+    const copyEditFixa=()=>{
+        if(!editingFixa) return;
+        setCopyFixa(fixaToForm(editingFixa));
+        setEditingFixa(null);
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const openEditDV=(row: Record<string,any>)=>{const r=row as DespesaVariavel;setCopyDV(null);setEditingDV(r);setModal(true);};
     // Fecha o modal de edição e reabre como "nova despesa" pré-preenchida com os dados da despesa atual
@@ -454,8 +462,9 @@ export default function FinancasDashboard() {
     const dFD:FilterDef[]=[{key:"destino",label:"Destino",options:unique(dMonth,"destino")},{key:"status",label:"Status",options:unique(dMonth,"status")}];
     const iFD:FilterDef[]=[{key:"tipoAtivo",label:"Tipo de Ativo",options:unique(iMonth,"tipoAtivo")},{key:"frequencia",label:"Frequência",options:unique(iMonth,"frequencia")}];
     const tR=balancoMensal.reduce((s,m)=>s+m.receita,0);
+    const tI=balancoMensal.reduce((s,m)=>s+m.investimento,0);
     const tD=balancoMensal.reduce((s,m)=>s+m.despesa,0);
-    const tB=tR-tD;
+    const tB=tR-tI-tD;
 
     return (
         <div className="min-h-screen bg-zinc-50/50" style={{fontFamily:"'Inter',-apple-system,BlinkMacSystemFont,sans-serif"}}>
@@ -470,6 +479,7 @@ export default function FinancasDashboard() {
                     <div className="flex items-center gap-5">
                         <div className="hidden md:flex items-center gap-5">
                             <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Receita</p><p className="text-sm font-bold text-emerald-600">{fmt(tR)}</p></div>
+                            <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Investido</p><p className="text-sm font-bold text-sky-600">{fmt(tI)}</p></div>
                             <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Despesa</p><p className="text-sm font-bold text-red-500">{fmt(tD)}</p></div>
                             <div className="h-8 w-px bg-zinc-200"/>
                             <div className="text-right"><p className="text-[11px] text-zinc-400 uppercase tracking-wider">Balanço</p><p className={`text-sm font-bold ${tB>=0?"text-emerald-600":"text-red-600"}`}>{fmt(tB)}</p></div>
@@ -500,11 +510,12 @@ export default function FinancasDashboard() {
                 {/* BALANÇO MENSAL */}
                 <section><SH title="Balanço Mensal"/><TabsNav tabs={qTabs} active={qTab} onChange={setQTab}/>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
-                        {vis.map(m=>{const p=Math.round((m.despesa/m.receita)*100)||0,b=m.receita-m.despesa;return(
+                        {vis.map(m=>{const p=Math.round(((m.despesa+m.investimento)/m.receita)*100)||0,b=m.receita-m.investimento-m.despesa;return(
                             <div key={m.mes} className="rounded-xl border border-zinc-200 bg-white p-5 hover:shadow-md hover:border-zinc-300 transition-all">
                                 <div className="flex items-center justify-between mb-4"><h3 className="font-semibold text-zinc-900">{m.mes}</h3><span className={`text-xs font-mono font-semibold px-2 py-0.5 rounded-md ${p>90?"bg-red-50 text-red-600":"bg-zinc-100 text-zinc-600"}`}>{p}%</span></div>
                                 <div className="space-y-1.5 mb-4">
                                     <div className="flex justify-between text-sm"><span className="text-emerald-600 font-medium">Receita</span><span className="text-zinc-700 font-mono">{fmt(m.receita)}</span></div>
+                                    <div className="flex justify-between text-sm"><span className="text-sky-600 font-medium">Investimento</span><span className="text-zinc-700 font-mono">{fmt(m.investimento)}</span></div>
                                     <div className="flex justify-between text-sm"><span className="text-red-500 font-medium">Despesa</span><span className="text-zinc-700 font-mono">{fmt(m.despesa)}</span></div>
                                 </div>
                                 <LP p={p}/>
@@ -524,7 +535,7 @@ export default function FinancasDashboard() {
                 </section>
 
                 {/* DESPESAS FIXAS */}
-                <section><SH title="Despesas Fixas" onAdd={()=>{setEditingFixa(null);setModalFixa(true);}} filters={fFD} activeFilters={fFilters} onFilterChange={(k,v)=>setFFilters(p=>({...p,[k]:v}))}
+                <section><SH title="Despesas Fixas" onAdd={()=>{setEditingFixa(null);setCopyFixa(null);setModalFixa(true);}} filters={fFD} activeFilters={fFilters} onFilterChange={(k,v)=>setFFilters(p=>({...p,[k]:v}))}
                     extra={<StatsToggle active={fStats} onClick={()=>setFStats(s=>!s)}/>}/><MT a={fM} o={setFM}/>
                     <div className="mt-3" key={fStats?"stats":"tbl"} style={{animation:"softswap .25s ease"}}>
                         {fStats
@@ -668,10 +679,12 @@ export default function FinancasDashboard() {
                 fontes={configFontes}
                 initialData={editingGanho?{descricao:editingGanho.descricao,fonte:editingGanho.fonte,data:editingGanho.data,valor:String(editingGanho.valor),dataLimite:""}:undefined}
                 onDelete={editingGanho?requestDeleteGanho:undefined}/>
-            <DespesaFixaModal open={modalFixa} onClose={closeAll} onSubmit={submitFixa} loading={loading}
+            <DespesaFixaModal key={editingFixa?`edit-${editingFixa.id}`:copyFixa?"copy":"new"} open={modalFixa} onClose={closeAll} onSubmit={submitFixa} loading={loading}
                 categorias={configCategorias} formas={configFormas}
-                initialData={editingFixa?{descricao:editingFixa.descricao,categoria:editingFixa.categoria,valor:String(editingFixa.valor),vencimento:editingFixa.vencimento,status:editingFixa.status,dataPgto:editingFixa.dataPgto,forma:editingFixa.forma,dataLimite:""}:undefined}
-                onDelete={editingFixa?requestDeleteFixa:undefined}/>
+                initialData={editingFixa?fixaToForm(editingFixa):undefined}
+                copyData={copyFixa??undefined}
+                onDelete={editingFixa?requestDeleteFixa:undefined}
+                onCopy={editingFixa?copyEditFixa:undefined}/>
             <DividaModal open={modalDivida} onClose={closeAll} onSubmit={submitDivida} loading={loading}
                 initialData={editingDivida?{descricao:editingDivida.descricao,destino:editingDivida.destino,valor:String(editingDivida.valor),vencimento:editingDivida.vencimento,status:editingDivida.status,dataLimite:""}:undefined}
                 onDelete={editingDivida?requestDeleteDivida:undefined}/>
