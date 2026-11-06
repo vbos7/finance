@@ -348,6 +348,8 @@ export default function FinancasDashboard() {
         else router.post(metas.store().url, { ...data }, rOpts);
     };
     const submitMetaInvest=(data: MetaInvestFormData)=>{
+        // Editando pela aba de meta: o próprio investimento vira/continua aporte na meta
+        if(editingInvest) return putComEscopo(investimentos.update(editingInvest.id).url, { metaId: data.metaId, valor: data.valor, data: data.data }, editingInvest.grupoTotal);
         setLoading(true);
         router.post(metas.investir(data.metaId).url, { valor: data.valor, data: data.data, dataLimite: data.dataLimite || undefined }, rOpts);
     };

@@ -94,6 +94,58 @@ test('update modifies an investimento', function () {
     expect($inv->data->format('Y-m-d'))->toBe('2026-01-15');
 });
 
+test('update with metaId saves the investimento as a meta contribution', function () {
+    $user = User::factory()->create();
+    $meta = $user->metas()->create(['nome' => 'Reserva', 'icone' => 'Gem', 'valor' => 10000]);
+    $inv  = $user->investimentos()->create([
+        'produto'    => 'PETR4',
+        'empresa'    => 'Petrobras',
+        'valor'      => 30,
+        'quantidade' => 100,
+        'tipo_ativo' => 'Ação',
+        'provento'   => 1.50,
+        'frequencia' => 'Trimestral',
+        'data'       => '2026-01-10',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('investimentos.update', $inv->id), [
+            'metaId' => $meta->id,
+            'valor'  => 750,
+            'data'   => '20/01/2026',
+        ])
+        ->assertRedirect();
+
+    $inv->refresh();
+    expect($inv->produto)->toBe('Reserva');
+    expect($inv->tipo_ativo)->toBe('Meta Financeira');
+    expect($inv->valor)->toBe('750.00');
+    expect($inv->quantidade)->toBe(1);
+    expect($inv->data->format('Y-m-d'))->toBe('2026-01-20');
+});
+
+test('update with metaId of another user is rejected', function () {
+    $user  = User::factory()->create();
+    $other = User::factory()->create();
+    $meta  = $other->metas()->create(['nome' => 'Alheia', 'icone' => 'Gem', 'valor' => 10000]);
+    $inv   = $user->investimentos()->create([
+        'produto'    => 'PETR4',
+        'empresa'    => 'Petrobras',
+        'valor'      => 30,
+        'quantidade' => 1,
+        'tipo_ativo' => 'Ação',
+        'provento'   => 0,
+        'frequencia' => 'Mensal',
+        'data'       => '2026-01-10',
+    ]);
+
+    $this->actingAs($user)
+        ->put(route('investimentos.update', $inv->id), ['metaId' => $meta->id, 'valor' => 100, 'data' => '10/01/2026'])
+        ->assertNotFound();
+
+    expect($inv->refresh()->produto)->toBe('PETR4');
+});
+
 test('destroy deletes an investimento', function () {
     $user = User::factory()->create();
     $inv  = $user->investimentos()->create([
