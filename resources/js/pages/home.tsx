@@ -15,6 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Spinner } from "@/components/ui/spinner";
+import MultiSelect from "@/components/multi-select";
 import DespesaVariavelModal, { type DespesaFormData } from "@/components/despesa-variavel-modal";
 import LancamentosStats from "@/components/lancamentos-stats";
 import GanhoModal, { type GanhoFormData } from "@/components/ganho-modal";
@@ -80,10 +81,12 @@ const byMonthMMYYYY = <T extends Record<string, any>>(d: T[], f: keyof T, a: str
 const unique = <T extends Record<string, any>>(rows: T[], key: string): string[] =>
     [...new Set(rows.map(r => r[key]).filter((v): v is string => typeof v === "string" && v !== ""))].sort();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const applyFilters = <T extends Record<string, any>>(rows: T[], filters: Record<string, string>): T[] => {
-    const active = Object.entries(filters).filter(([, v]) => v);
+// Cada filtro aceita vários valores: o registro passa se bater com qualquer um deles (OU),
+// e precisa passar em todos os filtros ativos (E)
+const applyFilters = <T extends Record<string, any>>(rows: T[], filters: Record<string, string[]>): T[] => {
+    const active = Object.entries(filters).filter(([, v]) => v.length > 0);
     if (active.length === 0) return rows;
-    return rows.filter(r => active.every(([k, v]) => String(r[k]) === v));
+    return rows.filter(r => active.every(([k, v]) => v.includes(String(r[k]))));
 };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const sortByDate = <T extends Record<string, any>>(rows: T[], key: string): T[] => {
@@ -211,8 +214,8 @@ const Tbl = ({cols,data,footer,onRowClick,onDeleteSelected}: {cols: Column[]; da
     </div>);
 };
 
-const SH = ({title,onAdd,filters,activeFilters,onFilterChange,extra}: {title: string; onAdd?: () => void; filters?: FilterDef[]; activeFilters?: Record<string, string>; onFilterChange?: (k: string, v: string) => void; extra?: ReactNode}) => {
-    const ac = activeFilters ? Object.values(activeFilters).filter(v => v).length : 0;
+const SH = ({title,onAdd,filters,activeFilters,onFilterChange,extra}: {title: string; onAdd?: () => void; filters?: FilterDef[]; activeFilters?: Record<string, string[]>; onFilterChange?: (k: string, v: string[]) => void; extra?: ReactNode}) => {
+    const ac = activeFilters ? Object.values(activeFilters).filter(v => v.length > 0).length : 0;
     return (
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-zinc-900 tracking-tight">{title}</h2>
@@ -232,14 +235,16 @@ const SH = ({title,onAdd,filters,activeFilters,onFilterChange,extra}: {title: st
                                 {filters.map(f => (
                                     <div key={f.key} className="space-y-1">
                                         <label className="text-xs font-medium text-zinc-500 uppercase tracking-wider">{f.label}</label>
-                                        <select value={activeFilters?.[f.key] || ""} onChange={e => onFilterChange(f.key, e.target.value)} className="w-full h-8 px-2 rounded-md border border-zinc-200 text-sm text-zinc-700 bg-white focus:outline-none focus:ring-2 focus:ring-zinc-950/10">
-                                            <option value="">Todos</option>
-                                            {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-                                        </select>
+                                        <MultiSelect
+                                            // Mantém visíveis opções já marcadas mesmo que não existam no mês atual
+                                            options={[...f.options, ...(activeFilters?.[f.key] ?? []).filter(v => !f.options.includes(v))]}
+                                            value={activeFilters?.[f.key] ?? []}
+                                            onChange={v => onFilterChange(f.key, v)}
+                                        />
                                     </div>
                                 ))}
                                 {ac > 0 && (
-                                    <button onClick={() => filters.forEach(f => onFilterChange(f.key, ""))} className="w-full h-8 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
+                                    <button onClick={() => filters.forEach(f => onFilterChange(f.key, []))} className="w-full h-8 rounded-md text-sm font-medium text-red-600 hover:bg-red-50 transition-colors">
                                         Limpar filtros
                                     </button>
                                 )}
@@ -274,11 +279,11 @@ export default function FinancasDashboard() {
     const [fStats,setFStats]=useState(false);
     const [dM,setDM]=useState(currentMonth);
     const [iM,setIM]=useState(currentMonth);
-    const [gFilters,setGFilters]=useState<Record<string,string>>({});
-    const [fFilters,setFFilters]=useState<Record<string,string>>({});
-    const [vFilters,setVFilters]=useState<Record<string,string>>({});
-    const [dFilters,setDFilters]=useState<Record<string,string>>({});
-    const [iFilters,setIFilters]=useState<Record<string,string>>({});
+    const [gFilters,setGFilters]=useState<Record<string,string[]>>({});
+    const [fFilters,setFFilters]=useState<Record<string,string[]>>({});
+    const [vFilters,setVFilters]=useState<Record<string,string[]>>({});
+    const [dFilters,setDFilters]=useState<Record<string,string[]>>({});
+    const [iFilters,setIFilters]=useState<Record<string,string[]>>({});
     const [modal,setModal]=useState(false);
     const [modalGanho,setModalGanho]=useState(false);
     const [modalFixa,setModalFixa]=useState(false);
