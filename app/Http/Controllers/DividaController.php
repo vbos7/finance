@@ -72,7 +72,7 @@ class DividaController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $this->destroyWithScope($request, $request->user()->dividas(), $id);
+        $this->destroyWithScope($request, $request->user()->dividas(), $id, 'vencimento');
 
         return back();
     }

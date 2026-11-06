@@ -95,7 +95,7 @@ class DespesaFixaController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $this->destroyWithScope($request, $request->user()->despesasFixas(), $id);
+        $this->destroyWithScope($request, $request->user()->despesasFixas(), $id, 'vencimento');
 
         return back();
     }

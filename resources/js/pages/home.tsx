@@ -27,11 +27,11 @@ import ConfigModal, { type ConfigFormData } from "@/components/config-modal";
 /* ── TYPES ─────────────────────────────────────────────────────────────────── */
 
 interface BalancoMensal { mes: string; receita: number; investimento: number; despesa: number }
-interface Ganho { id: number; descricao: string; fonte: string; data: string; valor: number; balanco: string ; grupoId: string | null; grupoTotal: number }
-interface DespesaFixa { id: number; descricao: string; categoria: string; valor: number; vencimento: string; status: string; dataPgto: string; forma: string; balanco: string ; grupoId: string | null; grupoTotal: number }
-interface DespesaVariavel { id: number; descricao: string; categoria: string; valor: number; data: string; balanco: string; forma: string ; grupoId: string | null; grupoTotal: number }
-interface Divida { id: number; descricao: string; destino: string; valor: number; vencimento: string; status: string; balanco: string ; grupoId: string | null; grupoTotal: number }
-interface Investimento { id: number; produto: string; empresa: string; valor: number; quantidade: number; valorTotal: number; tipoAtivo: string; provento: number; frequencia: string; data: string; balanco: string ; grupoId: string | null; grupoTotal: number }
+interface Ganho { id: number; descricao: string; fonte: string; data: string; valor: number; balanco: string ; grupoId: string | null; grupoTotal: number; grupoRestantes: number }
+interface DespesaFixa { id: number; descricao: string; categoria: string; valor: number; vencimento: string; status: string; dataPgto: string; forma: string; balanco: string ; grupoId: string | null; grupoTotal: number; grupoRestantes: number }
+interface DespesaVariavel { id: number; descricao: string; categoria: string; valor: number; data: string; balanco: string; forma: string ; grupoId: string | null; grupoTotal: number; grupoRestantes: number }
+interface Divida { id: number; descricao: string; destino: string; valor: number; vencimento: string; status: string; balanco: string ; grupoId: string | null; grupoTotal: number; grupoRestantes: number }
+interface Investimento { id: number; produto: string; empresa: string; valor: number; quantidade: number; valorTotal: number; tipoAtivo: string; provento: number; frequencia: string; data: string; balanco: string ; grupoId: string | null; grupoTotal: number; grupoRestantes: number }
 interface Meta { id: number; nome: string; icone: string | null; percent: number; valor: number; investido: number; faltante: number }
 interface FonteRenda { id: number; nome: string; icone: string | null; percent: number; metaAnual: number; receitaAnual: number }
 interface Categoria { id: number; nome: string; icone: string | null; pct: number; lim: number | null; desp: number }
@@ -369,12 +369,14 @@ export default function FinancasDashboard() {
         else router.post(formasPagamentoRoutes.store().url, payload, rOpts);
     };
 
-    // grupoTotal > 1 => lançamento veio de recorrência/parcelamento/assinatura,
-    // então o usuário escolhe entre excluir só este ou todos os vinculados
-    const requestDelete = (url: string, grupoTotal = 1) => {
+    // grupoRestantes > 1 => há vinculados (recorrência/parcelamento/assinatura) a partir
+    // deste lançamento; o usuário escolhe entre excluir só este ou este e os próximos.
+    // Lançamentos anteriores do grupo nunca são afetados.
+    const requestDelete = (url: string, grupoRestantes = 1, message?: string) => {
         closeAll();
         setDeleteConfirm({
-            grupoTotal,
+            grupoTotal: grupoRestantes,
+            message,
             action: (escopo: EscopoExclusao = "registro") => {
                 setDeleting(true);
                 router.delete(url, {
@@ -406,11 +408,11 @@ export default function FinancasDashboard() {
         });
     };
 
-    const requestDeleteDV=()=>{if(editingDV) requestDelete(despesasVariaveis.destroy(editingDV.id).url,editingDV.grupoTotal);};
-    const requestDeleteGanho=()=>{if(editingGanho) requestDelete(ganhos.destroy(editingGanho.id).url,editingGanho.grupoTotal);};
-    const requestDeleteFixa=()=>{if(editingFixa) requestDelete(despesasFixas.destroy(editingFixa.id).url,editingFixa.grupoTotal);};
-    const requestDeleteDivida=()=>{if(editingDivida) requestDelete(dividas.destroy(editingDivida.id).url,editingDivida.grupoTotal);};
-    const requestDeleteInvest=()=>{if(editingInvest) requestDelete(investimentos.destroy(editingInvest.id).url,editingInvest.grupoTotal);};
+    const requestDeleteDV=()=>{if(editingDV) requestDelete(despesasVariaveis.destroy(editingDV.id).url,editingDV.grupoRestantes);};
+    const requestDeleteGanho=()=>{if(editingGanho) requestDelete(ganhos.destroy(editingGanho.id).url,editingGanho.grupoRestantes);};
+    const requestDeleteFixa=()=>{if(editingFixa) requestDelete(despesasFixas.destroy(editingFixa.id).url,editingFixa.grupoRestantes);};
+    const requestDeleteDivida=()=>{if(editingDivida) requestDelete(dividas.destroy(editingDivida.id).url,editingDivida.grupoRestantes);};
+    const requestDeleteInvest=()=>{if(editingInvest) requestDelete(investimentos.destroy(editingInvest.id).url,editingInvest.grupoRestantes);};
     const requestDeleteMeta=()=>{if(editingMeta) requestDelete(metas.destroy(editingMeta.id).url);};
     const requestDeleteFonte=()=>{if(editingFonte) requestDelete(fontesRendaRoutes.destroy(editingFonte.id).url);};
     const requestDeleteCategoria=()=>{if(editingCategoria) requestDelete(categoriasRoutes.destroy(editingCategoria.id).url);};
@@ -744,14 +746,14 @@ export default function FinancasDashboard() {
                         {(deleteConfirm.grupoTotal ?? 1) > 1 ? (
                             <>
                                 <p className="text-sm text-zinc-500 mt-2">
-                                    Este lançamento faz parte de um grupo de <span className="font-semibold text-zinc-700">{deleteConfirm.grupoTotal} registros vinculados</span> (recorrência, parcelamento ou assinatura). Essa ação não pode ser desfeita.
+                                    Este lançamento tem <span className="font-semibold text-zinc-700">{(deleteConfirm.grupoTotal ?? 1) - 1} {(deleteConfirm.grupoTotal ?? 1) - 1 === 1 ? "registro vinculado" : "registros vinculados"} a partir dele</span> (recorrência, parcelamento ou assinatura). Lançamentos anteriores não são afetados. Essa ação não pode ser desfeita.
                                 </p>
                                 <div className="flex flex-col gap-2 mt-6">
                                     <button onClick={() => deleteConfirm.action("registro")} disabled={deleting} className="h-9 px-4 rounded-md border border-red-200 text-red-600 text-sm font-medium hover:bg-red-50 transition-colors disabled:opacity-50">
                                         Excluir somente este
                                     </button>
                                     <button onClick={() => deleteConfirm.action("grupo")} disabled={deleting} className="h-9 px-4 rounded-md bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                                        {deleting ? <><Spinner className="size-4" /> Excluindo...</> : `Excluir os ${deleteConfirm.grupoTotal} vinculados`}
+                                        {deleting ? <><Spinner className="size-4" /> Excluindo...</> : `Excluir este e os próximos (${deleteConfirm.grupoTotal})`}
                                     </button>
                                     <button onClick={() => setDeleteConfirm(null)} disabled={deleting} className="h-9 px-4 rounded-md text-sm font-medium text-zinc-500 hover:bg-zinc-50 transition-colors disabled:opacity-50">
                                         Cancelar

@@ -93,7 +93,7 @@ class InvestimentoController extends Controller
 
     public function destroy(Request $request, int $id): RedirectResponse
     {
-        $this->destroyWithScope($request, $request->user()->investimentos(), $id);
+        $this->destroyWithScope($request, $request->user()->investimentos(), $id, 'data');
 
         return back();
     }

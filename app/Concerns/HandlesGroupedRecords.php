@@ -13,14 +13,16 @@ use Illuminate\Http\Request;
 trait HandlesGroupedRecords
 {
     /**
-     * Exclui o lançamento informado. Com escopo "grupo", remove também todos os
-     * lançamentos vinculados a ele; sem grupo_id, o escopo é ignorado.
+     * Exclui o lançamento informado. Com escopo "grupo", remove também os
+     * lançamentos vinculados a partir dele (mesma data ou posterior em
+     * $colunaData) — os anteriores ficam preservados. Sem grupo_id, o escopo
+     * é ignorado.
      *
      * @template TModel of Model
      *
      * @param  HasMany<TModel, \App\Models\User>  $relation
      */
-    protected function destroyWithScope(Request $request, HasMany $relation, int $id): void
+    protected function destroyWithScope(Request $request, HasMany $relation, int $id, string $colunaData): void
     {
         $escopo = $request->validate([
             'escopo' => 'nullable|in:registro,grupo',
@@ -32,7 +34,10 @@ trait HandlesGroupedRecords
         $grupoId = $record->getAttribute('grupo_id');
 
         if ($escopo === 'grupo' && $grupoId !== null) {
-            (clone $relation)->where('grupo_id', $grupoId)->delete();
+            (clone $relation)
+                ->where('grupo_id', $grupoId)
+                ->whereDate($colunaData, '>=', $record->getAttribute($colunaData))
+                ->delete();
 
             return;
         }
