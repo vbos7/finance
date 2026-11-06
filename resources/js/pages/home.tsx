@@ -413,7 +413,8 @@ export default function FinancasDashboard() {
     const requestDeleteFixa=()=>{if(editingFixa) requestDelete(despesasFixas.destroy(editingFixa.id).url,editingFixa.grupoRestantes);};
     const requestDeleteDivida=()=>{if(editingDivida) requestDelete(dividas.destroy(editingDivida.id).url,editingDivida.grupoRestantes);};
     const requestDeleteInvest=()=>{if(editingInvest) requestDelete(investimentos.destroy(editingInvest.id).url,editingInvest.grupoRestantes);};
-    const requestDeleteMeta=()=>{if(editingMeta) requestDelete(metas.destroy(editingMeta.id).url);};
+    const requestDeleteMeta=()=>{if(editingMeta) requestDelete(metas.destroy(editingMeta.id).url,1,
+        'A meta será removida e os aportes já feitos nela serão transferidos para investimentos do tipo "Outros".');};
     const requestDeleteFonte=()=>{if(editingFonte) requestDelete(fontesRendaRoutes.destroy(editingFonte.id).url);};
     const requestDeleteCategoria=()=>{if(editingCategoria) requestDelete(categoriasRoutes.destroy(editingCategoria.id).url);};
     const requestDeleteForma=()=>{if(editingForma) requestDelete(formasPagamentoRoutes.destroy(editingForma.id).url);};

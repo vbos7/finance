@@ -66,6 +66,26 @@ test('destroy deletes a meta', function () {
     $this->assertDatabaseMissing('metas', ['id' => $meta->id]);
 });
 
+test('destroy transfers the meta investments to Outros', function () {
+    $user  = User::factory()->create();
+    $meta  = $user->metas()->create(['nome' => 'Casamento', 'icone' => 'Gem', 'valor' => 50000]);
+    $outra = $user->metas()->create(['nome' => 'Viagem', 'icone' => 'Plane', 'valor' => 10000]);
+
+    $this->actingAs($user)->post(route('metas.investir', $meta->id), ['valor' => 500, 'data' => '10/01/2026']);
+    $this->actingAs($user)->post(route('metas.investir', $outra->id), ['valor' => 200, 'data' => '10/01/2026']);
+
+    $this->actingAs($user)
+        ->delete(route('metas.destroy', $meta->id))
+        ->assertRedirect();
+
+    $aporteCasamento = $user->investimentos()->where('produto', 'Casamento')->sole();
+    expect($aporteCasamento->tipo_ativo)->toBe('Outros');
+    expect($aporteCasamento->valor)->toBe('500.00');
+
+    // Aportes de outras metas não são tocados
+    expect($user->investimentos()->where('produto', 'Viagem')->sole()->tipo_ativo)->toBe('Meta Financeira');
+});
+
 test('investir creates an investimento from meta', function () {
     $user = User::factory()->create();
     $meta = $user->metas()->create([
