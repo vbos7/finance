@@ -288,6 +288,7 @@ export default function FinancasDashboard() {
     const [copyDV,setCopyDV]=useState<DespesaFormData|null>(null);
     const [editingGanho,setEditingGanho]=useState<Ganho|null>(null);
     const [editingFixa,setEditingFixa]=useState<DespesaFixa|null>(null);
+    const [copyFixa,setCopyFixa]=useState<DespesaFixaFormData|null>(null);
     const [editingDivida,setEditingDivida]=useState<Divida|null>(null);
     const [editingInvest,setEditingInvest]=useState<Investimento|null>(null);
     const [modalMeta,setModalMeta]=useState(false);
@@ -305,7 +306,7 @@ export default function FinancasDashboard() {
     const [updateConfirm, setUpdateConfirm] = useState<{ action: (escopo: EscopoExclusao) => void; grupoTotal: number } | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    const closeAll=()=>{setModal(false);setModalGanho(false);setModalFixa(false);setModalDivida(false);setModalInvest(false);setModalMeta(false);setModalFonte(false);setModalCategoria(false);setModalForma(false);setEditingDV(null);setCopyDV(null);setEditingGanho(null);setEditingFixa(null);setEditingDivida(null);setEditingInvest(null);setEditingMeta(null);setEditingFonte(null);setEditingCategoria(null);setEditingForma(null);setUpdateConfirm(null);};
+    const closeAll=()=>{setModal(false);setModalGanho(false);setModalFixa(false);setModalDivida(false);setModalInvest(false);setModalMeta(false);setModalFonte(false);setModalCategoria(false);setModalForma(false);setEditingDV(null);setCopyDV(null);setEditingGanho(null);setEditingFixa(null);setCopyFixa(null);setEditingDivida(null);setEditingInvest(null);setEditingMeta(null);setEditingFonte(null);setEditingCategoria(null);setEditingForma(null);setUpdateConfirm(null);};
 
     const rOpts = { preserveScroll: true, preserveState: true, onSuccess: closeAll, onFinish: () => setLoading(false) };
 
@@ -418,7 +419,14 @@ export default function FinancasDashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const openEditGanho=(row: Record<string,any>)=>{const r=row as Ganho;setEditingGanho(r);setModalGanho(true);};
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const openEditFixa=(row: Record<string,any>)=>{const r=row as DespesaFixa;setEditingFixa(r);setModalFixa(true);};
+    const openEditFixa=(row: Record<string,any>)=>{const r=row as DespesaFixa;setCopyFixa(null);setEditingFixa(r);setModalFixa(true);};
+    const fixaToForm=(d: DespesaFixa): DespesaFixaFormData=>({descricao:d.descricao,categoria:d.categoria,valor:String(d.valor),vencimento:d.vencimento,status:d.status,dataPgto:d.dataPgto,forma:d.forma,dataLimite:""});
+    // Fecha o modal de edição e reabre como "nova despesa fixa" pré-preenchida com os dados da atual
+    const copyEditFixa=()=>{
+        if(!editingFixa) return;
+        setCopyFixa(fixaToForm(editingFixa));
+        setEditingFixa(null);
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const openEditDV=(row: Record<string,any>)=>{const r=row as DespesaVariavel;setCopyDV(null);setEditingDV(r);setModal(true);};
     // Fecha o modal de edição e reabre como "nova despesa" pré-preenchida com os dados da despesa atual
@@ -524,7 +532,7 @@ export default function FinancasDashboard() {
                 </section>
 
                 {/* DESPESAS FIXAS */}
-                <section><SH title="Despesas Fixas" onAdd={()=>{setEditingFixa(null);setModalFixa(true);}} filters={fFD} activeFilters={fFilters} onFilterChange={(k,v)=>setFFilters(p=>({...p,[k]:v}))}
+                <section><SH title="Despesas Fixas" onAdd={()=>{setEditingFixa(null);setCopyFixa(null);setModalFixa(true);}} filters={fFD} activeFilters={fFilters} onFilterChange={(k,v)=>setFFilters(p=>({...p,[k]:v}))}
                     extra={<StatsToggle active={fStats} onClick={()=>setFStats(s=>!s)}/>}/><MT a={fM} o={setFM}/>
                     <div className="mt-3" key={fStats?"stats":"tbl"} style={{animation:"softswap .25s ease"}}>
                         {fStats
@@ -668,10 +676,12 @@ export default function FinancasDashboard() {
                 fontes={configFontes}
                 initialData={editingGanho?{descricao:editingGanho.descricao,fonte:editingGanho.fonte,data:editingGanho.data,valor:String(editingGanho.valor),dataLimite:""}:undefined}
                 onDelete={editingGanho?requestDeleteGanho:undefined}/>
-            <DespesaFixaModal open={modalFixa} onClose={closeAll} onSubmit={submitFixa} loading={loading}
+            <DespesaFixaModal key={editingFixa?`edit-${editingFixa.id}`:copyFixa?"copy":"new"} open={modalFixa} onClose={closeAll} onSubmit={submitFixa} loading={loading}
                 categorias={configCategorias} formas={configFormas}
-                initialData={editingFixa?{descricao:editingFixa.descricao,categoria:editingFixa.categoria,valor:String(editingFixa.valor),vencimento:editingFixa.vencimento,status:editingFixa.status,dataPgto:editingFixa.dataPgto,forma:editingFixa.forma,dataLimite:""}:undefined}
-                onDelete={editingFixa?requestDeleteFixa:undefined}/>
+                initialData={editingFixa?fixaToForm(editingFixa):undefined}
+                copyData={copyFixa??undefined}
+                onDelete={editingFixa?requestDeleteFixa:undefined}
+                onCopy={editingFixa?copyEditFixa:undefined}/>
             <DividaModal open={modalDivida} onClose={closeAll} onSubmit={submitDivida} loading={loading}
                 initialData={editingDivida?{descricao:editingDivida.descricao,destino:editingDivida.destino,valor:String(editingDivida.valor),vencimento:editingDivida.vencimento,status:editingDivida.status,dataLimite:""}:undefined}
                 onDelete={editingDivida?requestDeleteDivida:undefined}/>
